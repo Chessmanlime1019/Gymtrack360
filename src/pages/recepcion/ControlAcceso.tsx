@@ -20,16 +20,10 @@ async function obtenerSedesActivas() {
 }
 
 async function validarAcceso(params: { qrCode: string; sedeId: string }) {
-  // Cast puntual: la inferencia de tipos de supabase-js para RPC no está
-  // resolviendo bien el "Args" que declaramos en Database.Functions con
-  // esta versión del paquete. Esto no afecta el runtime — Postgres sigue
-  // validando los nombres de parámetro del lado del servidor igual.
-  const rpc = supabase.rpc as unknown as (
-    fn: string,
-    args: { p_qr_code: string; p_sede_actual_id: string }
-  ) => Promise<{ data: unknown; error: { message: string } | null }>;
-
-  const { data, error } = await rpc("validar_acceso_qr", {
+  // Cast puntual solo en la llamada, SIN separar el método de "supabase"
+  // (separarlo pierde el "this" interno de la librería y rompe en runtime,
+  // no solo en tipos — ese fue el bug real).
+  const { data, error } = await (supabase.rpc as any)("validar_acceso_qr", {
     p_qr_code: params.qrCode,
     p_sede_actual_id: params.sedeId,
   });
@@ -48,6 +42,10 @@ export default function ControlAcceso() {
     sesion?.sedeId ?? ""
   );
 
+  const [codigoManual, setCodigoManual] = useState("");
+  const [escaneando, setEscaneando] = useState(true);
+  const [resultado, setResultado] = useState<ValidacionAcceso | null>(null);
+
   const {
     data: sedes,
     isLoading: cargandoSedes,
@@ -59,9 +57,6 @@ export default function ControlAcceso() {
   });
 
   const sedeActivaId = esSuperAdmin ? sedeSeleccionada : sesion?.sedeId ?? "";
-
-  const [escaneando, setEscaneando] = useState(true);
-  const [resultado, setResultado] = useState<ValidacionAcceso | null>(null);
 
   const historial = useRealtimeAsistencias(sedeActivaId || null);
 
@@ -94,6 +89,13 @@ export default function ControlAcceso() {
   function handleScan(qrCode: string) {
     if (!sedeActivaId || mutacion.isPending) return;
     mutacion.mutate({ qrCode, sedeId: sedeActivaId });
+  }
+
+  function handleBuscarManual() {
+    const codigo = codigoManual.trim();
+    if (!codigo || !sedeActivaId || mutacion.isPending) return;
+    mutacion.mutate({ qrCode: codigo, sedeId: sedeActivaId });
+    setCodigoManual("");
   }
 
   return (
@@ -171,6 +173,33 @@ export default function ControlAcceso() {
             <p className="text-muted text-xs text-center flex items-center justify-center gap-2">
               <PauseCircle className="w-4 h-4" /> Validando...
             </p>
+          )}
+
+          {!resultado && (
+            <div className="space-y-2">
+              <p className="text-muted text-xs text-center">
+                ¿No se puede escanear? Pega el código del cliente
+              </p>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={codigoManual}
+                  onChange={(e) => setCodigoManual(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") handleBuscarManual();
+                  }}
+                  placeholder="o pega el código del estudiante/cliente"
+                  className="flex-1 rounded-lg bg-background border border-white/10 px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-primary"
+                />
+                <button
+                  onClick={handleBuscarManual}
+                  disabled={!codigoManual.trim() || mutacion.isPending}
+                  className="bg-primary text-background font-semibold rounded-lg px-4 py-2 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Buscar
+                </button>
+              </div>
+            </div>
           )}
         </>
       )}

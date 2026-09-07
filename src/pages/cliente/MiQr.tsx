@@ -1,6 +1,7 @@
+import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import QRCode from "react-qr-code";
-import { RefreshCw } from "lucide-react";
+import { RefreshCw, Copy, Check } from "lucide-react";
 import { supabase } from "@/lib/supabaseClient";
 import { useAuth } from "@/hooks/useAuth";
 import { AsyncState } from "@/components/ui/AsyncState";
@@ -20,10 +21,6 @@ async function obtenerMiQr(userId: string): Promise<string | null> {
 async function generarYGuardarQr(userId: string): Promise<string> {
   const nuevoCodigo = `GT360-${crypto.randomUUID()}`;
 
-  // Cast puntual: .update() también colapsa a "never" con esta versión
-  // de supabase-js, mismo bug sistémico que .single(). El "as any" aquí
-  // es seguro porque el shape del payload ya está validado arriba
-  // (nuevoCodigo es siempre un string).
   const { error } = await (supabase.from("profiles") as any)
     .update({ qr_code: nuevoCodigo })
     .eq("id", userId);
@@ -36,6 +33,7 @@ export default function MiQr() {
   const { sesion } = useAuth();
   const queryClient = useQueryClient();
   const userId = sesion?.userId;
+  const [copiado, setCopiado] = useState(false);
 
   const {
     data: qrCode,
@@ -54,6 +52,18 @@ export default function MiQr() {
     },
   });
 
+  async function copiarCodigo() {
+    if (!qrCode) return;
+    try {
+      await navigator.clipboard.writeText(qrCode);
+      setCopiado(true);
+      setTimeout(() => setCopiado(false), 2000);
+    } catch {
+      // Si el navegador bloquea el clipboard (poco común), no rompemos nada,
+      // el usuario igual puede seleccionar el texto a mano.
+    }
+  }
+
   return (
     <div className="max-w-sm mx-auto space-y-6">
       <div>
@@ -69,9 +79,39 @@ export default function MiQr() {
         errorMessage="No se pudo cargar tu código QR. Intenta de nuevo."
       >
         {qrCode ? (
-          <div className="bg-white rounded-xl p-6 flex flex-col items-center gap-4">
-            <QRCode value={qrCode} size={220} />
-            <p className="text-black/50 text-xs font-mono">{qrCode}</p>
+          <div className="bg-surface rounded-xl p-6 border border-white/10 space-y-4">
+            <div className="bg-white rounded-xl p-6 flex justify-center">
+              <QRCode value={qrCode} size={200} />
+            </div>
+
+            <div className="text-center">
+              <p className="font-semibold">
+                {sesion?.nombre} {sesion?.apellido}
+              </p>
+              <p className="text-muted text-xs">{sesion?.email}</p>
+            </div>
+
+            <div className="border-t border-white/10 pt-4 space-y-2">
+              <p className="text-muted text-xs text-center">
+                ¿No se puede escanear? Muestra o dicta este código
+              </p>
+              <div className="flex items-center gap-2 bg-background rounded-lg border border-white/10 px-3 py-2">
+                <span className="flex-1 font-mono text-xs text-primary truncate">
+                  {qrCode}
+                </span>
+                <button
+                  onClick={copiarCodigo}
+                  aria-label="Copiar código"
+                  className="shrink-0 p-1.5 rounded-md text-white/60 hover:bg-white/5 hover:text-white transition-colors"
+                >
+                  {copiado ? (
+                    <Check className="w-4 h-4 text-primary" />
+                  ) : (
+                    <Copy className="w-4 h-4" />
+                  )}
+                </button>
+              </div>
+            </div>
           </div>
         ) : (
           <div className="bg-surface rounded-xl p-6 border border-white/10 text-center space-y-4">
