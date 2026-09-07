@@ -26,7 +26,11 @@ export default function Register() {
   const [exito, setExito] = useState(false);
   const [cargandoSubmit, setCargandoSubmit] = useState(false);
 
-  const { data: sedes, isLoading: cargandoSedes } = useQuery({
+  const {
+    data: sedes,
+    isLoading: cargandoSedes,
+    isError: errorSedes,
+  } = useQuery({
     queryKey: ["sedes-activas"],
     queryFn: obtenerSedesActivas,
   });
@@ -135,12 +139,18 @@ export default function Register() {
             <select
               id="sedeId"
               {...register("sedeId")}
-              disabled={cargandoSedes}
+              disabled={cargandoSedes || errorSedes}
               defaultValue=""
               className="w-full rounded-lg bg-background border border-white/10 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
             >
               <option value="" disabled>
-                {cargandoSedes ? "Cargando sedes..." : "Selecciona tu sede"}
+                {cargandoSedes
+                  ? "Cargando sedes..."
+                  : errorSedes
+                  ? "Error al cargar sedes"
+                  : sedes && sedes.length === 0
+                  ? "No hay sedes disponibles"
+                  : "Selecciona tu sede"}
               </option>
               {sedes?.map((sede) => (
                 <option key={sede.id} value={sede.id}>
@@ -150,6 +160,11 @@ export default function Register() {
             </select>
             {errors.sedeId && (
               <p className="text-red-400 text-xs mt-1">{errors.sedeId.message}</p>
+            )}
+            {errorSedes && (
+              <p className="text-red-400 text-xs mt-1">
+                No se pudieron cargar las sedes. Revisa tu conexión o intenta de nuevo.
+              </p>
             )}
           </div>
 

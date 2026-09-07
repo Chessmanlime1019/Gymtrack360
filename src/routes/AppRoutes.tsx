@@ -1,5 +1,6 @@
 import { Routes, Route, Navigate } from "react-router-dom";
 import { ProtectedRoute } from "./ProtectedRoute";
+import { RoleRedirect } from "./RoleRedirect";
 
 // Auth
 import Login from "@/pages/auth/Login";
@@ -33,6 +34,9 @@ export function AppRoutes() {
         path="/no-autorizado"
         element={<div className="p-8">No tienes acceso a esta sección.</div>}
       />
+      <Route element={<ProtectedRoute />}>
+        <Route path="/" element={<RoleRedirect />} />
+      </Route>
 
       {/* super_admin + admin_sede */}
       <Route element={<ProtectedRoute rolesPermitidos={["super_admin", "admin_sede"]} />}>
