@@ -1,0 +1,20 @@
+# Dependencias
+node_modules/
+
+# Archivos de compilación
+dist/
+dist-ssr/
+
+# Editor (VS Code)
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+
+# Variables de entorno (NO se suben las locales)
+.env
+.env.local
+.env.*.local
+
+# Permitir que la plantilla de ejemplo SÍ se suba
+!.env.example
