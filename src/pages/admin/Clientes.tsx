@@ -6,8 +6,8 @@ import { Search, Pencil, UserRound } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { AsyncState } from "@/components/ui/AsyncState";
 import { Modal } from "@/components/ui/Modal";
-import { obtenerSedesActivas } from "@/services/sedesService";
 import { BadgeEstadoMembresia } from "@/components/ui/BadgeEstadoMembresia";
+import { obtenerSedesActivas } from "@/services/sedesService";
 import {
   obtenerClientes,
   actualizarCliente,
@@ -17,30 +17,6 @@ import {
   editarClienteSchema,
   type EditarClienteValues,
 } from "@/schemas/clienteSchemas";
-import type { MembresiaEstado } from "@/types";
-
-const ESTILO_BADGE: Record<MembresiaEstado, string> = {
-  activa: "bg-primary/10 text-primary",
-  vencida: "bg-yellow-500/10 text-yellow-400",
-  cancelada: "bg-red-500/10 text-red-400",
-};
-
-const ETIQUETA_BADGE: Record<MembresiaEstado, string> = {
-  activa: "Activa",
-  vencida: "Vencida",
-  cancelada: "Cancelada",
-};
-
-function BadgeMembresia({ estado }: { estado: MembresiaEstado | null }) {
-  if (!estado) {
-    return <span className="text-xs text-muted">Sin membresía</span>;
-  }
-  return (
-    <span className={`text-xs px-2 py-0.5 rounded-full ${ESTILO_BADGE[estado]}`}>
-      
-    </span>
-  );
-}
 
 export default function AdminClientes() {
   const { sesion } = useAuth();
@@ -169,7 +145,7 @@ export default function AdminClientes() {
                     {cliente.nombre} {cliente.apellido}
                   </td>
                   <td className="px-4 py-3">
-                    <BadgeMembresia estado={cliente.membresiaEstado} />
+                    <BadgeEstadoMembresia estado={cliente.membresiaEstado} />
                   </td>
                   <td className="px-4 py-3 text-muted text-xs">
                     {cliente.membresiaFechaFin
@@ -225,7 +201,7 @@ export default function AdminClientes() {
                 </button>
               </div>
               <div className="flex items-center justify-between text-xs pt-2 border-t border-white/5">
-                <BadgeMembresia estado={cliente.membresiaEstado} />
+                <BadgeEstadoMembresia estado={cliente.membresiaEstado} />
                 {cliente.membresiaFechaFin && (
                   <span className="text-muted">
                     Vence{" "}
