@@ -84,3 +84,26 @@ export async function actualizarCliente(
 
   if (error) throw error;
 }
+export interface ClienteMini {
+  id: string;
+  nombre: string;
+  apellido: string;
+}
+
+export async function obtenerClientesSimple(
+  sedeId: string | null
+): Promise<ClienteMini[]> {
+  let query = supabase
+    .from("profiles")
+    .select("id, nombre, apellido")
+    .eq("role", "cliente")
+    .order("nombre");
+
+  if (sedeId) {
+    query = query.eq("sede_id", sedeId);
+  }
+
+  const { data, error } = await query.returns<ClienteMini[]>();
+  if (error) throw error;
+  return data;
+}

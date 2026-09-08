@@ -7,6 +7,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { AsyncState } from "@/components/ui/AsyncState";
 import { Modal } from "@/components/ui/Modal";
 import { obtenerSedesActivas } from "@/services/sedesService";
+import { BadgeEstadoMembresia } from "@/components/ui/BadgeEstadoMembresia";
 import {
   obtenerClientes,
   actualizarCliente,
@@ -36,7 +37,7 @@ function BadgeMembresia({ estado }: { estado: MembresiaEstado | null }) {
   }
   return (
     <span className={`text-xs px-2 py-0.5 rounded-full ${ESTILO_BADGE[estado]}`}>
-      {ETIQUETA_BADGE[estado]}
+      
     </span>
   );
 }
