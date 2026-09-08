@@ -1,7 +1,15 @@
 import { useAuthContext } from "@/context/AuthContext";
 
 export function useAuth() {
-  const { sesion, cargando, login, logout, registrar } = useAuthContext();
+  const {
+    sesion,
+    cargando,
+    login,
+    logout,
+    registrar,
+    recuperarPassword,
+    actualizarPassword,
+  } = useAuthContext();
 
   return {
     sesion,
@@ -10,5 +18,7 @@ export function useAuth() {
     login,
     logout,
     registrar,
+    recuperarPassword,
+    actualizarPassword,
   };
 }

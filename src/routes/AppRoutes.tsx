@@ -20,12 +20,16 @@ import Rutinas from "@/pages/profesional/Rutinas";
 import MiPerfil from "@/pages/cliente/MiPerfil";
 import MiQr from "@/pages/cliente/MiQr";
 import MiMembresia from "@/pages/cliente/MiMembresia";
+import ForgotPassword from "@/pages/auth/ForgotPassword";
+import ResetPassword from "@/pages/auth/ResetPassword";
 
 export function AppRoutes() {
   return (
     <Routes>
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
+      <Route path="/forgot-password" element={<ForgotPassword />} />
+      <Route path="/reset-password" element={<ResetPassword />} />
       <Route
         path="/no-autorizado"
         element={<div className="p-8">No tienes acceso a esta sección.</div>}

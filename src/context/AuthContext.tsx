@@ -11,8 +11,11 @@ import type { Profile, SesionUsuario, UserRole } from "@/types";
 interface AuthContextValue {
   sesion: SesionUsuario | null;
   cargando: boolean;
+  recuperarPassword: (email: string) => Promise<void>;
+  actualizarPassword: (nuevaPassword: string) => Promise<void>;
   login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
+
   registrar: (params: {
     email: string;
     password: string;
@@ -92,9 +95,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (error) throw error;
   }
 
+
+
   async function logout() {
     await supabase.auth.signOut();
     setSesion(null);
+  }
+
+  async function recuperarPassword(email: string) {
+    const { error } = await supabase.auth.resetPasswordForEmail(email);
+    if (error) throw error;
+  }
+
+  async function actualizarPassword(nuevaPassword: string) {
+    const { error } = await supabase.auth.updateUser({ password: nuevaPassword });
+    if (error) throw error;
   }
 
   async function registrar(params: {
@@ -119,7 +134,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ sesion, cargando, login, logout, registrar }}>
+
+    <AuthContext.Provider
+      value={{ sesion, cargando, login, logout, registrar, recuperarPassword, actualizarPassword }}
+    >
       {children}
     </AuthContext.Provider>
   );
