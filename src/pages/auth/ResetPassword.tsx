@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+﻿import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useNavigate } from "react-router-dom";
@@ -19,15 +19,15 @@ export default function ResetPassword() {
 
   useEffect(() => {
     // Supabase procesa el token del link y dispara este evento cuando
-    // la sesión de recuperación queda lista. Si el link es inválido o
-    // ya expiró, nunca llega a haber sesión y mostramos el error.
+    // la sesiÃ³n de recuperaciÃ³n queda lista. Si el link es invÃ¡lido o
+    // ya expirÃ³, nunca llega a haber sesiÃ³n y mostramos el error.
     const { data: listener } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === "PASSWORD_RECOVERY" || (event === "SIGNED_IN" && session)) {
         setSesionValida(true);
       }
     });
 
-    // Por si el evento ya disparó antes de montar este listener
+    // Por si el evento ya disparÃ³ antes de montar este listener
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) setSesionValida(true);
     });
@@ -59,7 +59,7 @@ export default function ResetPassword() {
       setTimeout(() => navigate("/login"), 2000);
     } catch (err) {
       setErrorApi(
-        err instanceof Error ? err.message : "No se pudo actualizar la contraseña"
+        err instanceof Error ? err.message : "No se pudo actualizar la contraseÃ±a"
       );
     } finally {
       setCargando(false);
@@ -78,9 +78,9 @@ export default function ResetPassword() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background px-4">
         <div className="w-full max-w-sm bg-surface rounded-xl p-8 shadow-lg text-center space-y-3">
-          <h2 className="text-red-400 text-lg font-semibold">Link inválido o expirado</h2>
+          <h2 className="text-red-600 text-lg font-semibold">Link invÃ¡lido o expirado</h2>
           <p className="text-muted text-sm">
-            Solicita un nuevo link de recuperación de contraseña.
+            Solicita un nuevo link de recuperaciÃ³n de contraseÃ±a.
           </p>
         </div>
       </div>
@@ -92,7 +92,7 @@ export default function ResetPassword() {
       <div className="min-h-screen flex items-center justify-center bg-background px-4">
         <div className="w-full max-w-sm bg-surface rounded-xl p-8 shadow-lg text-center">
           <h2 className="text-primary text-lg font-semibold mb-2">
-            ¡Contraseña actualizada!
+            Â¡ContraseÃ±a actualizada!
           </h2>
           <p className="text-muted text-sm">Redirigiendo al login...</p>
         </div>
@@ -104,45 +104,45 @@ export default function ResetPassword() {
     <div className="min-h-screen flex items-center justify-center bg-background px-4">
       <div className="w-full max-w-sm bg-surface rounded-xl p-8 shadow-lg">
         <h1 className="text-2xl font-bold text-primary mb-1">GYMTRACK 360</h1>
-        <p className="text-muted text-sm mb-6">Define tu nueva contraseña</p>
+        <p className="text-muted text-sm mb-6">Define tu nueva contraseÃ±a</p>
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <div>
             <label htmlFor="password" className="block text-sm mb-1">
-              Nueva contraseña
+              Nueva contraseÃ±a
             </label>
             <input
               id="password"
               type="password"
               autoComplete="new-password"
               {...register("password")}
-              className="w-full rounded-lg bg-background border border-white/10 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+              className="w-full rounded-lg bg-background border border-line px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
             />
             {errors.password && (
-              <p className="text-red-400 text-xs mt-1">{errors.password.message}</p>
+              <p className="text-red-600 text-xs mt-1">{errors.password.message}</p>
             )}
           </div>
 
           <div>
             <label htmlFor="confirmarPassword" className="block text-sm mb-1">
-              Confirmar contraseña
+              Confirmar contraseÃ±a
             </label>
             <input
               id="confirmarPassword"
               type="password"
               autoComplete="new-password"
               {...register("confirmarPassword")}
-              className="w-full rounded-lg bg-background border border-white/10 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+              className="w-full rounded-lg bg-background border border-line px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
             />
             {errors.confirmarPassword && (
-              <p className="text-red-400 text-xs mt-1">
+              <p className="text-red-600 text-xs mt-1">
                 {errors.confirmarPassword.message}
               </p>
             )}
           </div>
 
           {errorApi && (
-            <div className="bg-red-500/10 border border-red-500/30 text-red-400 text-sm rounded-lg px-3 py-2">
+            <div className="bg-red-500/10 border border-red-500/30 text-red-600 text-sm rounded-lg px-3 py-2">
               {errorApi}
             </div>
           )}
@@ -152,7 +152,7 @@ export default function ResetPassword() {
             disabled={cargando}
             className="w-full bg-primary text-background font-semibold rounded-lg py-2 text-sm hover:bg-primary-dark transition-colors disabled:opacity-50"
           >
-            {cargando ? "Guardando..." : "Actualizar contraseña"}
+            {cargando ? "Guardando..." : "Actualizar contraseÃ±a"}
           </button>
         </form>
       </div>

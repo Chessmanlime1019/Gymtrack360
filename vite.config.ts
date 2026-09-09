@@ -13,8 +13,8 @@ export default defineConfig({
         name: "GYMTRACK 360",
         short_name: "GYMTRACK",
         description: "Sistema de gestión de gimnasios multi-sede",
-        theme_color: "#0F0F0F",
-        background_color: "#0F0F0F",
+        theme_color: "#E8672B",
+        background_color: "#F7F3ED",
         display: "standalone",
         icons: [
           { src: "icon-192.png", sizes: "192x192", type: "image/png" },

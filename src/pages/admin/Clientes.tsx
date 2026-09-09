@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+﻿import { useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -95,7 +95,7 @@ export default function AdminClientes() {
             value={busqueda}
             onChange={(e) => setBusqueda(e.target.value)}
             placeholder="Buscar por nombre..."
-            className="w-full rounded-lg bg-surface border border-white/10 pl-9 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+            className="w-full rounded-lg bg-surface border border-line pl-9 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
           />
         </div>
 
@@ -103,7 +103,7 @@ export default function AdminClientes() {
           <select
             value={sedeFiltro}
             onChange={(e) => setSedeFiltro(e.target.value)}
-            className="rounded-lg bg-surface border border-white/10 px-3 py-2 text-sm sm:w-56"
+            className="rounded-lg bg-surface border border-line px-3 py-2 text-sm sm:w-56"
           >
             <option value="">Todas las sedes</option>
             {sedes?.map((sede) => (
@@ -122,17 +122,17 @@ export default function AdminClientes() {
         emptyMessage={
           busqueda
             ? "No se encontraron clientes con ese nombre."
-            : "Todavía no hay clientes registrados en esta sede."
+            : "TodavÃ­a no hay clientes registrados en esta sede."
         }
         errorMessage="No se pudo cargar la lista de clientes."
       >
         {/* Tabla en escritorio */}
-        <div className="hidden md:block bg-surface rounded-xl border border-white/10 overflow-hidden">
+        <div className="hidden md:block bg-surface rounded-xl border border-line overflow-hidden">
           <table className="w-full text-sm">
             <thead className="bg-white/5 text-muted text-xs uppercase">
               <tr>
                 <th className="text-left px-4 py-3">Nombre</th>
-                <th className="text-left px-4 py-3">Membresía</th>
+                <th className="text-left px-4 py-3">MembresÃ­a</th>
                 <th className="text-left px-4 py-3">Vence</th>
                 <th className="text-left px-4 py-3">Registrado</th>
                 <th className="px-4 py-3"></th>
@@ -140,7 +140,7 @@ export default function AdminClientes() {
             </thead>
             <tbody>
               {clientesFiltrados.map((cliente) => (
-                <tr key={cliente.id} className="border-t border-white/5">
+                <tr key={cliente.id} className="border-t border-line">
                   <td className="px-4 py-3">
                     {cliente.nombre} {cliente.apellido}
                   </td>
@@ -150,7 +150,7 @@ export default function AdminClientes() {
                   <td className="px-4 py-3 text-muted text-xs">
                     {cliente.membresiaFechaFin
                       ? new Date(cliente.membresiaFechaFin).toLocaleDateString("es-PE")
-                      : "—"}
+                      : "â€”"}
                   </td>
                   <td className="px-4 py-3 text-muted text-xs">
                     {new Date(cliente.created_at).toLocaleDateString("es-PE")}
@@ -159,7 +159,7 @@ export default function AdminClientes() {
                     <button
                       onClick={() => abrirEdicion(cliente)}
                       aria-label="Editar cliente"
-                      className="p-1.5 rounded-md text-white/60 hover:bg-white/5 hover:text-primary transition-colors"
+                      className="p-1.5 rounded-md text-muted hover:bg-black/5 hover:text-primary transition-colors"
                     >
                       <Pencil className="w-4 h-4" />
                     </button>
@@ -170,12 +170,12 @@ export default function AdminClientes() {
           </table>
         </div>
 
-        {/* Cards en móvil/tablet angosto */}
+        {/* Cards en mÃ³vil/tablet angosto */}
         <div className="md:hidden space-y-3">
           {clientesFiltrados.map((cliente) => (
             <div
               key={cliente.id}
-              className="bg-surface rounded-xl p-4 border border-white/10 space-y-2"
+              className="bg-surface rounded-xl p-4 border border-line space-y-2"
             >
               <div className="flex items-start justify-between">
                 <div className="flex items-center gap-2">
@@ -195,12 +195,12 @@ export default function AdminClientes() {
                 <button
                   onClick={() => abrirEdicion(cliente)}
                   aria-label="Editar cliente"
-                  className="p-1.5 rounded-md text-white/60 hover:bg-white/5 hover:text-primary transition-colors"
+                  className="p-1.5 rounded-md text-muted hover:bg-black/5 hover:text-primary transition-colors"
                 >
                   <Pencil className="w-4 h-4" />
                 </button>
               </div>
-              <div className="flex items-center justify-between text-xs pt-2 border-t border-white/5">
+              <div className="flex items-center justify-between text-xs pt-2 border-t border-line">
                 <BadgeEstadoMembresia estado={cliente.membresiaEstado} />
                 {cliente.membresiaFechaFin && (
                   <span className="text-muted">
@@ -230,10 +230,10 @@ export default function AdminClientes() {
             <input
               id="nombre"
               {...register("nombre")}
-              className="w-full rounded-lg bg-background border border-white/10 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+              className="w-full rounded-lg bg-background border border-line px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
             />
             {errors.nombre && (
-              <p className="text-red-400 text-xs mt-1">{errors.nombre.message}</p>
+              <p className="text-red-600 text-xs mt-1">{errors.nombre.message}</p>
             )}
           </div>
 
@@ -244,15 +244,15 @@ export default function AdminClientes() {
             <input
               id="apellido"
               {...register("apellido")}
-              className="w-full rounded-lg bg-background border border-white/10 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+              className="w-full rounded-lg bg-background border border-line px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
             />
             {errors.apellido && (
-              <p className="text-red-400 text-xs mt-1">{errors.apellido.message}</p>
+              <p className="text-red-600 text-xs mt-1">{errors.apellido.message}</p>
             )}
           </div>
 
           {editarMutacion.isError && (
-            <div className="bg-red-500/10 border border-red-500/30 text-red-400 text-sm rounded-lg px-3 py-2">
+            <div className="bg-red-500/10 border border-red-500/30 text-red-600 text-sm rounded-lg px-3 py-2">
               No se pudo guardar el cambio. Intenta de nuevo.
             </div>
           )}

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+﻿import { useEffect, useState } from "react";
 import { Html5Qrcode } from "html5-qrcode";
 import { CameraOff, Camera } from "lucide-react";
 
@@ -25,7 +25,7 @@ export function QrScanner({ onScan, activo }: QrScannerProps) {
       try {
         scanner.clear();
       } catch {
-        /* noop: puede fallar si el DOM ya no existe, no es crítico */
+        /* noop: puede fallar si el DOM ya no existe, no es crÃ­tico */
       }
     }
 
@@ -37,8 +37,8 @@ export function QrScanner({ onScan, activo }: QrScannerProps) {
           if (!cancelado) onScan(decodedText);
         },
         () => {
-          // Errores de "no se detectó QR en este frame" son normales y
-          // constantes mientras se busca el código; se ignoran a propósito.
+          // Errores de "no se detectÃ³ QR en este frame" son normales y
+          // constantes mientras se busca el cÃ³digo; se ignoran a propÃ³sito.
         }
       )
       .then(() => {
@@ -48,7 +48,7 @@ export function QrScanner({ onScan, activo }: QrScannerProps) {
         if (!cancelado) {
           setIniciando(false);
           setError(
-            "No se pudo acceder a la cámara. Revisa los permisos del navegador."
+            "No se pudo acceder a la cÃ¡mara. Revisa los permisos del navegador."
           );
           console.error(err);
         }
@@ -69,9 +69,9 @@ export function QrScanner({ onScan, activo }: QrScannerProps) {
 
   if (!activo) {
     return (
-      <div className="aspect-square w-full max-w-sm mx-auto rounded-xl bg-surface border border-white/10 flex flex-col items-center justify-center gap-2 text-muted">
+      <div className="aspect-square w-full max-w-sm mx-auto rounded-xl bg-surface border border-line flex flex-col items-center justify-center gap-2 text-muted">
         <CameraOff className="w-8 h-8" />
-        <p className="text-sm">Cámara en pausa</p>
+        <p className="text-sm">CÃ¡mara en pausa</p>
       </div>
     );
   }
@@ -80,14 +80,14 @@ export function QrScanner({ onScan, activo }: QrScannerProps) {
     <div className="w-full max-w-sm mx-auto space-y-2">
       <div
         id={SCANNER_ID}
-        className="aspect-square w-full rounded-xl overflow-hidden border border-white/10 bg-black"
+        className="aspect-square w-full rounded-xl overflow-hidden border border-line bg-black"
       />
       {iniciando && (
         <p className="text-muted text-xs text-center flex items-center justify-center gap-2">
-          <Camera className="w-4 h-4" /> Iniciando cámara...
+          <Camera className="w-4 h-4" /> Iniciando cÃ¡mara...
         </p>
       )}
-      {error && <p className="text-red-400 text-xs text-center">{error}</p>}
+      {error && <p className="text-red-600 text-xs text-center">{error}</p>}
     </div>
   );
 }

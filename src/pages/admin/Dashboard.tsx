@@ -1,4 +1,4 @@
-import { Users, CreditCard, ScanLine, TrendingUp } from "lucide-react";
+﻿import { Users, CreditCard, ScanLine, TrendingUp } from "lucide-react";
 
 interface KpiCardProps {
   label: string;
@@ -10,14 +10,14 @@ interface KpiCardProps {
 
 function KpiCard({ label, value, delta, deltaPositivo, icon: Icon }: KpiCardProps) {
   return (
-    <div className="bg-surface rounded-xl p-4 border border-white/10">
+    <div className="bg-surface rounded-xl p-4 border border-line">
       <div className="flex items-center justify-between mb-2">
         <p className="text-muted text-xs">{label}</p>
         <Icon className="w-4 h-4 text-primary" />
       </div>
       <p className="text-2xl font-bold">{value}</p>
       {delta && (
-        <p className={`text-xs mt-1 ${deltaPositivo ? "text-primary" : "text-red-400"}`}>
+        <p className={`text-xs mt-1 ${deltaPositivo ? "text-primary" : "text-red-600"}`}>
           {delta}
         </p>
       )}
@@ -33,17 +33,17 @@ export default function AdminDashboard() {
         <p className="text-muted text-sm">Resumen general de tu sede</p>
       </div>
 
-      {/* 1 columna en móvil, 2 en tablet, 4 en escritorio */}
+      {/* 1 columna en mÃ³vil, 2 en tablet, 4 en escritorio */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <KpiCard label="Clientes activos" value="0" icon={Users} />
         <KpiCard label="Ingresos hoy" value="0" icon={ScanLine} />
-        <KpiCard label="Membresías por vencer" value="0" icon={CreditCard} />
+        <KpiCard label="MembresÃ­as por vencer" value="0" icon={CreditCard} />
         <KpiCard label="Ingresos del mes" value="S/ 0" icon={TrendingUp} />
       </div>
 
-      <div className="bg-surface rounded-xl p-4 border border-white/10">
+      <div className="bg-surface rounded-xl p-4 border border-line">
         <p className="text-sm text-muted">
-          Aquí va el gráfico de asistencias en tiempo real (siguiente módulo).
+          AquÃ­ va el grÃ¡fico de asistencias en tiempo real (siguiente mÃ³dulo).
         </p>
       </div>
     </div>

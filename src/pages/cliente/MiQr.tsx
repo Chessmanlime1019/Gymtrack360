@@ -1,4 +1,4 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import QRCode from "react-qr-code";
 import { RefreshCw, Copy, Check } from "lucide-react";
@@ -59,7 +59,7 @@ export default function MiQr() {
       setCopiado(true);
       setTimeout(() => setCopiado(false), 2000);
     } catch {
-      // Si el navegador bloquea el clipboard (poco común), no rompemos nada,
+      // Si el navegador bloquea el clipboard (poco comÃºn), no rompemos nada,
       // el usuario igual puede seleccionar el texto a mano.
     }
   }
@@ -69,17 +69,17 @@ export default function MiQr() {
       <div>
         <h1 className="text-xl md:text-2xl font-bold">Mi QR</h1>
         <p className="text-muted text-sm">
-          Muestra este código en recepción para registrar tu ingreso
+          Muestra este cÃ³digo en recepciÃ³n para registrar tu ingreso
         </p>
       </div>
 
       <AsyncState
         isLoading={isLoading}
         isError={isError}
-        errorMessage="No se pudo cargar tu código QR. Intenta de nuevo."
+        errorMessage="No se pudo cargar tu cÃ³digo QR. Intenta de nuevo."
       >
         {qrCode ? (
-          <div className="bg-surface rounded-xl p-6 border border-white/10 space-y-4">
+          <div className="bg-surface rounded-xl p-6 border border-line space-y-4">
             <div className="bg-white rounded-xl p-6 flex justify-center">
               <QRCode value={qrCode} size={200} />
             </div>
@@ -91,18 +91,18 @@ export default function MiQr() {
               <p className="text-muted text-xs">{sesion?.email}</p>
             </div>
 
-            <div className="border-t border-white/10 pt-4 space-y-2">
+            <div className="border-t border-line pt-4 space-y-2">
               <p className="text-muted text-xs text-center">
-                ¿No se puede escanear? Muestra o dicta este código
+                Â¿No se puede escanear? Muestra o dicta este cÃ³digo
               </p>
-              <div className="flex items-center gap-2 bg-background rounded-lg border border-white/10 px-3 py-2">
+              <div className="flex items-center gap-2 bg-background rounded-lg border border-line px-3 py-2">
                 <span className="flex-1 font-mono text-xs text-primary truncate">
                   {qrCode}
                 </span>
                 <button
                   onClick={copiarCodigo}
-                  aria-label="Copiar código"
-                  className="shrink-0 p-1.5 rounded-md text-white/60 hover:bg-white/5 hover:text-white transition-colors"
+                  aria-label="Copiar cÃ³digo"
+                  className="shrink-0 p-1.5 rounded-md text-muted hover:bg-black/5 hover:text-ink transition-colors"
                 >
                   {copiado ? (
                     <Check className="w-4 h-4 text-primary" />
@@ -114,9 +114,9 @@ export default function MiQr() {
             </div>
           </div>
         ) : (
-          <div className="bg-surface rounded-xl p-6 border border-white/10 text-center space-y-4">
+          <div className="bg-surface rounded-xl p-6 border border-line text-center space-y-4">
             <p className="text-muted text-sm">
-              Todavía no tienes un código QR generado.
+              TodavÃ­a no tienes un cÃ³digo QR generado.
             </p>
             <button
               onClick={() => generarMutacion.mutate()}
@@ -129,8 +129,8 @@ export default function MiQr() {
               {generarMutacion.isPending ? "Generando..." : "Generar mi QR"}
             </button>
             {generarMutacion.isError && (
-              <p className="text-red-400 text-xs">
-                No se pudo generar el código. Intenta de nuevo.
+              <p className="text-red-600 text-xs">
+                No se pudo generar el cÃ³digo. Intenta de nuevo.
               </p>
             )}
           </div>

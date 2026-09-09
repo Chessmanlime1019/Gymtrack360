@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+﻿import type { ReactNode } from "react";
 import { Loader2, AlertCircle } from "lucide-react";
 
 interface AsyncStateProps {
@@ -15,7 +15,7 @@ export function AsyncState({
   isError,
   isEmpty = false,
   emptyMessage = "No hay datos para mostrar.",
-  errorMessage = "No se pudo cargar la información. Intenta de nuevo.",
+  errorMessage = "No se pudo cargar la informaciÃ³n. Intenta de nuevo.",
   children,
 }: AsyncStateProps) {
   if (isLoading) {
@@ -30,8 +30,8 @@ export function AsyncState({
   if (isError) {
     return (
       <div className="flex flex-col items-center justify-center py-12 gap-2 text-center">
-        <AlertCircle className="w-6 h-6 text-red-400" />
-        <p className="text-red-400 text-sm">{errorMessage}</p>
+        <AlertCircle className="w-6 h-6 text-red-600" />
+        <p className="text-red-600 text-sm">{errorMessage}</p>
       </div>
     );
   }

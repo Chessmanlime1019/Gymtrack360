@@ -1,4 +1,4 @@
-import { type ReactNode } from "react";
+﻿import { type ReactNode } from "react";
 import { X } from "lucide-react";
 
 interface ModalProps {
@@ -18,13 +18,13 @@ export function Modal({ isOpen, onClose, title, children }: ModalProps) {
         onClick={onClose}
         aria-hidden="true"
       />
-      <div className="relative bg-surface border border-white/10 rounded-t-xl sm:rounded-xl w-full sm:max-w-md max-h-[90vh] overflow-y-auto">
-        <div className="flex items-center justify-between px-4 py-3 border-b border-white/10 sticky top-0 bg-surface">
+      <div className="relative bg-surface border border-line rounded-t-xl sm:rounded-xl w-full sm:max-w-md max-h-[90vh] overflow-y-auto">
+        <div className="flex items-center justify-between px-4 py-3 border-b border-line sticky top-0 bg-surface">
           <h2 className="font-semibold text-sm">{title}</h2>
           <button
             onClick={onClose}
             aria-label="Cerrar"
-            className="p-1 rounded-md text-white/60 hover:bg-white/5 hover:text-white transition-colors"
+            className="p-1 rounded-md text-muted hover:bg-black/5 hover:text-ink transition-colors"
           >
             <X className="w-4 h-4" />
           </button>

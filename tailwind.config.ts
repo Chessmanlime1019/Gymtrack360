@@ -6,12 +6,15 @@ export default {
   theme: {
     extend: {
       colors: {
-        // paleta "Dark Fitness / Neon Green"
-        background: "#0F0F0F",
-        surface: "#1A1A1A",
-        primary: "#39FF14",
-        "primary-dark": "#2ECC0F",
-        muted: "#737373",
+        // paleta "Warm Wellness" — crema + naranja, tipo dashboard
+        // de gimnasio boutique. Reemplaza la anterior "Dark Fitness".
+        background: "#F7F3ED",
+        surface: "#FFFFFF",
+        primary: "#E8672B",
+        "primary-dark": "#C2521E",
+        muted: "#8A7B6C",
+        line: "#ECE3D6",
+        ink: "#241F19",
       },
       borderRadius: {
         xl: "1rem",

@@ -1,4 +1,4 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useQuery } from "@tanstack/react-query";
@@ -70,7 +70,7 @@ export default function Register() {
       <div className="min-h-screen flex items-center justify-center bg-background px-4">
         <div className="w-full max-w-sm bg-surface rounded-xl p-8 shadow-lg text-center">
           <h2 className="text-primary text-lg font-semibold mb-2">
-            ¡Cuenta creada!
+            Â¡Cuenta creada!
           </h2>
           <p className="text-muted text-sm">
             Revisa tu correo para confirmar tu cuenta. Redirigiendo al login...
@@ -95,10 +95,10 @@ export default function Register() {
               <input
                 id="nombre"
                 {...register("nombre")}
-                className="w-full rounded-lg bg-background border border-white/10 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                className="w-full rounded-lg bg-background border border-line px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
               />
               {errors.nombre && (
-                <p className="text-red-400 text-xs mt-1">{errors.nombre.message}</p>
+                <p className="text-red-600 text-xs mt-1">{errors.nombre.message}</p>
               )}
             </div>
             <div>
@@ -108,10 +108,10 @@ export default function Register() {
               <input
                 id="apellido"
                 {...register("apellido")}
-                className="w-full rounded-lg bg-background border border-white/10 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                className="w-full rounded-lg bg-background border border-line px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
               />
               {errors.apellido && (
-                <p className="text-red-400 text-xs mt-1">{errors.apellido.message}</p>
+                <p className="text-red-600 text-xs mt-1">{errors.apellido.message}</p>
               )}
             </div>
           </div>
@@ -125,10 +125,10 @@ export default function Register() {
               type="email"
               autoComplete="email"
               {...register("email")}
-              className="w-full rounded-lg bg-background border border-white/10 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+              className="w-full rounded-lg bg-background border border-line px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
             />
             {errors.email && (
-              <p className="text-red-400 text-xs mt-1">{errors.email.message}</p>
+              <p className="text-red-600 text-xs mt-1">{errors.email.message}</p>
             )}
           </div>
 
@@ -141,7 +141,7 @@ export default function Register() {
               {...register("sedeId")}
               disabled={cargandoSedes || errorSedes}
               defaultValue=""
-              className="w-full rounded-lg bg-background border border-white/10 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+              className="w-full rounded-lg bg-background border border-line px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
             >
               <option value="" disabled>
                 {cargandoSedes
@@ -159,51 +159,51 @@ export default function Register() {
               ))}
             </select>
             {errors.sedeId && (
-              <p className="text-red-400 text-xs mt-1">{errors.sedeId.message}</p>
+              <p className="text-red-600 text-xs mt-1">{errors.sedeId.message}</p>
             )}
             {errorSedes && (
-              <p className="text-red-400 text-xs mt-1">
-                No se pudieron cargar las sedes. Revisa tu conexión o intenta de nuevo.
+              <p className="text-red-600 text-xs mt-1">
+                No se pudieron cargar las sedes. Revisa tu conexiÃ³n o intenta de nuevo.
               </p>
             )}
           </div>
 
           <div>
             <label htmlFor="password" className="block text-sm mb-1">
-              Contraseña
+              ContraseÃ±a
             </label>
             <input
               id="password"
               type="password"
               autoComplete="new-password"
               {...register("password")}
-              className="w-full rounded-lg bg-background border border-white/10 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+              className="w-full rounded-lg bg-background border border-line px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
             />
             {errors.password && (
-              <p className="text-red-400 text-xs mt-1">{errors.password.message}</p>
+              <p className="text-red-600 text-xs mt-1">{errors.password.message}</p>
             )}
           </div>
 
           <div>
             <label htmlFor="confirmarPassword" className="block text-sm mb-1">
-              Confirmar contraseña
+              Confirmar contraseÃ±a
             </label>
             <input
               id="confirmarPassword"
               type="password"
               autoComplete="new-password"
               {...register("confirmarPassword")}
-              className="w-full rounded-lg bg-background border border-white/10 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+              className="w-full rounded-lg bg-background border border-line px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
             />
             {errors.confirmarPassword && (
-              <p className="text-red-400 text-xs mt-1">
+              <p className="text-red-600 text-xs mt-1">
                 {errors.confirmarPassword.message}
               </p>
             )}
           </div>
 
           {errorApi && (
-            <div className="bg-red-500/10 border border-red-500/30 text-red-400 text-sm rounded-lg px-3 py-2">
+            <div className="bg-red-500/10 border border-red-500/30 text-red-600 text-sm rounded-lg px-3 py-2">
               {errorApi}
             </div>
           )}
@@ -218,9 +218,9 @@ export default function Register() {
         </form>
 
         <p className="text-muted text-xs text-center mt-6">
-          ¿Ya tienes cuenta?{" "}
+          Â¿Ya tienes cuenta?{" "}
           <Link to="/login" className="text-primary hover:underline">
-            Inicia sesión
+            Inicia sesiÃ³n
           </Link>
         </p>
       </div>

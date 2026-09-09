@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+﻿import { useEffect, useRef, useState } from "react";
 import { LogOut, Camera, Loader2 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useRole } from "@/hooks/useRole";
@@ -47,7 +47,7 @@ export function ProfileMenu() {
       <button
         onClick={() => setAbierto((v) => !v)}
         aria-label="Perfil"
-        className="w-9 h-9 rounded-full overflow-hidden border border-white/10 shrink-0"
+        className="w-9 h-9 rounded-full overflow-hidden border border-line shrink-0"
       >
         {sesion.avatarUrl ? (
           <img src={sesion.avatarUrl} alt="" className="w-full h-full object-cover" />
@@ -59,9 +59,9 @@ export function ProfileMenu() {
       </button>
 
       {abierto && (
-        <div className="absolute right-0 mt-2 w-64 bg-surface border border-white/10 rounded-xl shadow-lg z-50 overflow-hidden">
-          <div className="p-4 flex items-center gap-3 border-b border-white/10">
-            <div className="relative w-12 h-12 rounded-full overflow-hidden border border-white/10 shrink-0 group">
+        <div className="absolute right-0 mt-2 w-64 bg-surface border border-line rounded-xl shadow-lg z-50 overflow-hidden">
+          <div className="p-4 flex items-center gap-3 border-b border-line">
+            <div className="relative w-12 h-12 rounded-full overflow-hidden border border-line shrink-0 group">
               {sesion.avatarUrl ? (
                 <img src={sesion.avatarUrl} alt="" className="w-full h-full object-cover" />
               ) : (
@@ -75,9 +75,9 @@ export function ProfileMenu() {
                 className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity"
               >
                 {subiendo ? (
-                  <Loader2 className="w-4 h-4 text-white animate-spin" />
+                  <Loader2 className="w-4 h-4 text-ink animate-spin" />
                 ) : (
-                  <Camera className="w-4 h-4 text-white" />
+                  <Camera className="w-4 h-4 text-ink" />
                 )}
               </button>
               <input
@@ -96,11 +96,11 @@ export function ProfileMenu() {
             </div>
           </div>
 
-          {error && <p className="px-4 pt-2 text-red-400 text-xs">{error}</p>}
+          {error && <p className="px-4 pt-2 text-red-600 text-xs">{error}</p>}
 
           <button
             onClick={() => inputRef.current?.click()}
-            className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-white/80 hover:bg-white/5 transition-colors"
+            className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-ink/80 hover:bg-black/5 transition-colors"
           >
             <Camera className="w-4 h-4" />
             Cambiar foto de perfil
@@ -108,10 +108,10 @@ export function ProfileMenu() {
 
           <button
             onClick={logout}
-            className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-white/80 hover:bg-white/5 hover:text-red-400 transition-colors border-t border-white/10"
+            className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-ink/80 hover:bg-black/5 hover:text-red-600 transition-colors border-t border-line"
           >
             <LogOut className="w-4 h-4" />
-            Cerrar sesión
+            Cerrar sesiÃ³n
           </button>
         </div>
       )}

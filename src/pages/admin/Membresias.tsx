@@ -1,4 +1,4 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -120,9 +120,9 @@ export default function AdminMembresias() {
     <div className="space-y-6">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-xl md:text-2xl font-bold">Membresías</h1>
+          <h1 className="text-xl md:text-2xl font-bold">MembresÃ­as</h1>
           <p className="text-muted text-sm">
-            Gestiona las membresías {esSuperAdmin ? "de todas las sedes" : "de tu sede"}
+            Gestiona las membresÃ­as {esSuperAdmin ? "de todas las sedes" : "de tu sede"}
           </p>
         </div>
         <button
@@ -139,7 +139,7 @@ export default function AdminMembresias() {
         <select
           value={sedeFiltro}
           onChange={(e) => setSedeFiltro(e.target.value)}
-          className="rounded-lg bg-surface border border-white/10 px-3 py-2 text-sm w-full sm:w-56"
+          className="rounded-lg bg-surface border border-line px-3 py-2 text-sm w-full sm:w-56"
         >
           <option value="">Selecciona una sede</option>
           {sedes?.map((sede) => (
@@ -151,19 +151,19 @@ export default function AdminMembresias() {
       )}
 
       {!sedeActivaId ? (
-        <div className="bg-surface rounded-xl p-6 text-center text-muted text-sm border border-white/10">
-          Selecciona una sede para ver sus membresías.
+        <div className="bg-surface rounded-xl p-6 text-center text-muted text-sm border border-line">
+          Selecciona una sede para ver sus membresÃ­as.
         </div>
       ) : (
         <AsyncState
           isLoading={isLoading}
           isError={isError}
           isEmpty={!membresias || membresias.length === 0}
-          emptyMessage="Todavía no hay membresías registradas en esta sede."
-          errorMessage="No se pudo cargar la lista de membresías."
+          emptyMessage="TodavÃ­a no hay membresÃ­as registradas en esta sede."
+          errorMessage="No se pudo cargar la lista de membresÃ­as."
         >
           {/* Tabla en escritorio */}
-          <div className="hidden md:block bg-surface rounded-xl border border-white/10 overflow-hidden">
+          <div className="hidden md:block bg-surface rounded-xl border border-line overflow-hidden">
             <table className="w-full text-sm">
               <thead className="bg-white/5 text-muted text-xs uppercase">
                 <tr>
@@ -176,7 +176,7 @@ export default function AdminMembresias() {
               </thead>
               <tbody>
                 {membresias?.map((m) => (
-                  <tr key={m.id} className="border-t border-white/5">
+                  <tr key={m.id} className="border-t border-line">
                     <td className="px-4 py-3">{m.clienteNombre}</td>
                     <td className="px-4 py-3 text-muted">{m.planNombre}</td>
                     <td className="px-4 py-3">
@@ -191,7 +191,7 @@ export default function AdminMembresias() {
                           onClick={() => renovarMutacion.mutate(m)}
                           disabled={renovarMutacion.isPending || m.estado === "cancelada"}
                           aria-label="Renovar"
-                          className="p-1.5 rounded-md text-white/60 hover:bg-white/5 hover:text-primary transition-colors disabled:opacity-30"
+                          className="p-1.5 rounded-md text-muted hover:bg-black/5 hover:text-primary transition-colors disabled:opacity-30"
                         >
                           <RotateCw className="w-4 h-4" />
                         </button>
@@ -199,7 +199,7 @@ export default function AdminMembresias() {
                           onClick={() => cancelarMutacion.mutate(m.id)}
                           disabled={cancelarMutacion.isPending || m.estado === "cancelada"}
                           aria-label="Cancelar"
-                          className="p-1.5 rounded-md text-white/60 hover:bg-white/5 hover:text-red-400 transition-colors disabled:opacity-30"
+                          className="p-1.5 rounded-md text-muted hover:bg-black/5 hover:text-red-600 transition-colors disabled:opacity-30"
                         >
                           <Ban className="w-4 h-4" />
                         </button>
@@ -211,12 +211,12 @@ export default function AdminMembresias() {
             </table>
           </div>
 
-          {/* Cards en móvil/tablet angosto */}
+          {/* Cards en mÃ³vil/tablet angosto */}
           <div className="md:hidden space-y-3">
             {membresias?.map((m) => (
               <div
                 key={m.id}
-                className="bg-surface rounded-xl p-4 border border-white/10 space-y-2"
+                className="bg-surface rounded-xl p-4 border border-line space-y-2"
               >
                 <div className="flex items-start justify-between">
                   <div>
@@ -225,7 +225,7 @@ export default function AdminMembresias() {
                   </div>
                   <BadgeEstadoMembresia estado={m.estado} />
                 </div>
-                <div className="flex items-center justify-between text-xs pt-2 border-t border-white/5">
+                <div className="flex items-center justify-between text-xs pt-2 border-t border-line">
                   <span className="text-muted">
                     Vence {new Date(m.fecha_fin).toLocaleDateString("es-PE")}
                   </span>
@@ -233,14 +233,14 @@ export default function AdminMembresias() {
                     <button
                       onClick={() => renovarMutacion.mutate(m)}
                       disabled={renovarMutacion.isPending || m.estado === "cancelada"}
-                      className="p-1.5 rounded-md text-white/60 hover:bg-white/5 hover:text-primary transition-colors disabled:opacity-30"
+                      className="p-1.5 rounded-md text-muted hover:bg-black/5 hover:text-primary transition-colors disabled:opacity-30"
                     >
                       <RotateCw className="w-4 h-4" />
                     </button>
                     <button
                       onClick={() => cancelarMutacion.mutate(m.id)}
                       disabled={cancelarMutacion.isPending || m.estado === "cancelada"}
-                      className="p-1.5 rounded-md text-white/60 hover:bg-white/5 hover:text-red-400 transition-colors disabled:opacity-30"
+                      className="p-1.5 rounded-md text-muted hover:bg-black/5 hover:text-red-600 transition-colors disabled:opacity-30"
                     >
                       <Ban className="w-4 h-4" />
                     </button>
@@ -255,7 +255,7 @@ export default function AdminMembresias() {
       <Modal
         isOpen={modalAsignarAbierto}
         onClose={() => setModalAsignarAbierto(false)}
-        title="Asignar nueva membresía"
+        title="Asignar nueva membresÃ­a"
       >
         <form
           onSubmit={handleSubmit((values) => asignarMutacion.mutate(values))}
@@ -269,7 +269,7 @@ export default function AdminMembresias() {
               id="clienteId"
               {...register("clienteId")}
               defaultValue=""
-              className="w-full rounded-lg bg-background border border-white/10 px-3 py-2 text-sm"
+              className="w-full rounded-lg bg-background border border-line px-3 py-2 text-sm"
             >
               <option value="" disabled>
                 {clientes ? "Selecciona un cliente" : "Cargando clientes..."}
@@ -281,7 +281,7 @@ export default function AdminMembresias() {
               ))}
             </select>
             {errors.clienteId && (
-              <p className="text-red-400 text-xs mt-1">{errors.clienteId.message}</p>
+              <p className="text-red-600 text-xs mt-1">{errors.clienteId.message}</p>
             )}
           </div>
 
@@ -293,25 +293,25 @@ export default function AdminMembresias() {
               id="planId"
               {...register("planId")}
               defaultValue=""
-              className="w-full rounded-lg bg-background border border-white/10 px-3 py-2 text-sm"
+              className="w-full rounded-lg bg-background border border-line px-3 py-2 text-sm"
             >
               <option value="" disabled>
                 {planes ? "Selecciona un plan" : "Cargando planes..."}
               </option>
               {planes?.map((p) => (
                 <option key={p.id} value={p.id}>
-                  {p.nombre} — S/ {p.precio} ({p.duracion_dias} días)
+                  {p.nombre} â€” S/ {p.precio} ({p.duracion_dias} dÃ­as)
                 </option>
               ))}
             </select>
             {errors.planId && (
-              <p className="text-red-400 text-xs mt-1">{errors.planId.message}</p>
+              <p className="text-red-600 text-xs mt-1">{errors.planId.message}</p>
             )}
           </div>
 
           {asignarMutacion.isError && (
-            <div className="bg-red-500/10 border border-red-500/30 text-red-400 text-sm rounded-lg px-3 py-2">
-              No se pudo asignar la membresía. Intenta de nuevo.
+            <div className="bg-red-500/10 border border-red-500/30 text-red-600 text-sm rounded-lg px-3 py-2">
+              No se pudo asignar la membresÃ­a. Intenta de nuevo.
             </div>
           )}
 
@@ -320,7 +320,7 @@ export default function AdminMembresias() {
             disabled={asignarMutacion.isPending}
             className="w-full bg-primary text-background font-semibold rounded-lg py-2 text-sm disabled:opacity-50"
           >
-            {asignarMutacion.isPending ? "Asignando..." : "Asignar membresía"}
+            {asignarMutacion.isPending ? "Asignando..." : "Asignar membresÃ­a"}
           </button>
         </form>
       </Modal>
