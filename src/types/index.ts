@@ -16,4 +16,5 @@ export interface SesionUsuario {
   apellido: string;
   role: import("./database.types").UserRole;
   sedeId: string | null;
+  avatarUrl: string | null;
 }

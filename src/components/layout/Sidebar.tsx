@@ -1,11 +1,10 @@
 import { NavLink } from "react-router-dom";
-import { LogOut } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useRole } from "@/hooks/useRole";
 import { NAV_POR_ROL, ETIQUETA_ROL } from "@/lib/navConfig";
 
 export function Sidebar() {
-  const { sesion, logout } = useAuth();
+  const { sesion } = useAuth();
   const { role } = useRole();
 
   if (!sesion || !role) return null;
@@ -36,22 +35,6 @@ export function Sidebar() {
           </NavLink>
         ))}
       </nav>
-
-      <div className="px-3 py-4 border-t border-white/10">
-        <div className="px-3 py-2 mb-2">
-          <p className="text-sm font-medium truncate">
-            {sesion.nombre} {sesion.apellido}
-          </p>
-          <p className="text-muted text-xs truncate">{sesion.email}</p>
-        </div>
-        <button
-          onClick={logout}
-          className="w-full flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-white/70 hover:bg-white/5 hover:text-red-400 transition-colors"
-        >
-          <LogOut className="w-4 h-4" />
-          Cerrar sesión
-        </button>
-      </div>
     </aside>
   );
 }

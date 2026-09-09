@@ -15,7 +15,7 @@ interface AuthContextValue {
   actualizarPassword: (nuevaPassword: string) => Promise<void>;
   login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
-
+  refrescarPerfil: () => Promise<void>;
   registrar: (params: {
     email: string;
     password: string;
@@ -30,9 +30,9 @@ const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 async function cargarPerfil(userId: string, email: string): Promise<SesionUsuario> {
   const { data, error } = await supabase
     .from("profiles")
-    .select("nombre, apellido, role, sede_id")
+    .select("nombre, apellido, role, sede_id, avatar_url")
     .eq("id", userId)
-    .single<Pick<Profile, "nombre" | "apellido" | "role" | "sede_id">>();
+    .single<Pick<Profile, "nombre" | "apellido" | "role" | "sede_id" | "avatar_url">>();
 
   if (error || !data) {
     throw new Error("No se pudo cargar el perfil del usuario");
@@ -45,6 +45,7 @@ async function cargarPerfil(userId: string, email: string): Promise<SesionUsuari
     apellido: data.apellido,
     role: data.role as UserRole,
     sedeId: data.sede_id,
+    avatarUrl: data.avatar_url,
   };
 }
 
@@ -95,7 +96,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (error) throw error;
   }
 
-
+  async function refrescarPerfil() {
+    if (!sesion) return;
+    const perfil = await cargarPerfil(sesion.userId, sesion.email);
+    setSesion(perfil);
+  }
 
   async function logout() {
     await supabase.auth.signOut();
@@ -103,7 +108,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   async function recuperarPassword(email: string) {
-    const { error } = await supabase.auth.resetPasswordForEmail(email);
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/reset-password`,
+    });
     if (error) throw error;
   }
 
@@ -134,9 +141,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-
     <AuthContext.Provider
-      value={{ sesion, cargando, login, logout, registrar, recuperarPassword, actualizarPassword }}
+      value={{
+        sesion,
+        cargando,
+        login,
+        logout,
+        registrar,
+        recuperarPassword,
+        actualizarPassword,
+        refrescarPerfil,
+      }}
     >
       {children}
     </AuthContext.Provider>
