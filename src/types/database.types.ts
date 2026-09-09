@@ -58,6 +58,7 @@ export interface Pago {
   monto: number;
   metodo_pago: string;
   fecha: string;
+  comprobante_url: string | null;
   created_at: string;
 }
 
@@ -67,7 +68,6 @@ export interface Asistencia {
   sede_id: string;
   fecha_hora: string;
 }
-
 
 export interface ProfesionalCliente {
   id: string;
@@ -105,14 +105,11 @@ export interface RutinaEjercicio {
   notas: string | null;
 }
 
-export type Json =
-  | string
-  | number
-  | boolean
-  | null
-  | { [key: string]: Json | undefined }
-  | Json[];
-
+// ============================================
+// Forma completa que @supabase/supabase-js v2 espera.
+// "Relationships" es obligatorio (aunque vacío) en versiones
+// recientes de postgrest-js, o el inferidor de tipos colapsa a "never".
+// ============================================
 export interface Database {
   public: {
     Tables: {
@@ -177,9 +174,7 @@ export interface Database {
         Relationships: [];
       };
     };
-    Views: {
-      [_ in never]: never;
-    };
+    Views: Record<string, never>;
     Functions: {
       validar_acceso_qr: {
         Args: { p_qr_code: string; p_sede_actual_id: string };
@@ -188,7 +183,7 @@ export interface Database {
           motivo: string | null;
           cliente: string | null;
           plan: string | null;
-        }[];
+        };
       };
       obtener_kpis_sede: {
         Args: { p_sede_id: string };
@@ -204,8 +199,6 @@ export interface Database {
       user_role: UserRole;
       membresia_estado: MembresiaEstado;
     };
-    CompositeTypes: {
-      [_ in never]: never;
-    };
+    CompositeTypes: Record<string, never>;
   };
 }
