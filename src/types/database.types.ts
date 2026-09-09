@@ -68,6 +68,43 @@ export interface Asistencia {
   fecha_hora: string;
 }
 
+
+export interface ProfesionalCliente {
+  id: string;
+  profesional_id: string;
+  cliente_id: string;
+  sede_id: string;
+  created_at: string;
+}
+
+export interface Ejercicio {
+  id: string;
+  nombre: string;
+  grupo_muscular: string | null;
+  created_at: string;
+}
+
+export interface Rutina {
+  id: string;
+  profesional_id: string;
+  cliente_id: string;
+  nombre: string;
+  descripcion: string | null;
+  activa: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface RutinaEjercicio {
+  id: string;
+  rutina_id: string;
+  ejercicio_id: string;
+  series: number;
+  repeticiones: number;
+  orden: number;
+  notas: string | null;
+}
+
 export type Json =
   | string
   | number
@@ -115,6 +152,30 @@ export interface Database {
         Update: Partial<Asistencia>;
         Relationships: [];
       };
+      profesional_clientes: {
+        Row: ProfesionalCliente;
+        Insert: Partial<ProfesionalCliente>;
+        Update: Partial<ProfesionalCliente>;
+        Relationships: [];
+      };
+      ejercicios: {
+        Row: Ejercicio;
+        Insert: Partial<Ejercicio>;
+        Update: Partial<Ejercicio>;
+        Relationships: [];
+      };
+      rutinas: {
+        Row: Rutina;
+        Insert: Partial<Rutina>;
+        Update: Partial<Rutina>;
+        Relationships: [];
+      };
+      rutina_ejercicios: {
+        Row: RutinaEjercicio;
+        Insert: Partial<RutinaEjercicio>;
+        Update: Partial<RutinaEjercicio>;
+        Relationships: [];
+      };
     };
     Views: {
       [_ in never]: never;
@@ -128,6 +189,15 @@ export interface Database {
           cliente: string | null;
           plan: string | null;
         }[];
+      };
+      obtener_kpis_sede: {
+        Args: { p_sede_id: string };
+        Returns: {
+          clientesActivos: number;
+          checkinsHoy: number;
+          membresiasPorVencer: number;
+          ingresosMes: number;
+        };
       };
     };
     Enums: {
