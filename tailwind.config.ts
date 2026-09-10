@@ -6,15 +6,14 @@ export default {
   theme: {
     extend: {
       colors: {
-        // paleta "Warm Wellness" — crema + naranja, tipo dashboard
-        // de gimnasio boutique. Reemplaza la anterior "Dark Fitness".
-        background: "#F7F3ED",
-        surface: "#FFFFFF",
-        primary: "#E8672B",
-        "primary-dark": "#C2521E",
-        muted: "#8A7B6C",
-        line: "#ECE3D6",
-        ink: "#241F19",
+        // Paleta "Dark + Naranja" — oscuro de base, acento naranja de marca.
+        background: "#0F1113",
+        surface: "#1A1E22",
+        primary: "#F15A24",
+        "primary-dark": "#FF6930", // usado como hover, es más claro a propósito
+        muted: "#8F99A3",
+        line: "#2A3036",
+        ink: "#FFFFFF",
       },
       borderRadius: {
         xl: "1rem",
