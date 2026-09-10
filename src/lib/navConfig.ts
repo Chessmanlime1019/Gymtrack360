@@ -3,6 +3,8 @@ import {
   LayoutDashboard,
   Users,
   CreditCard,
+  Tags,
+  Building2,
   BarChart3,
   ScanLine,
   Dumbbell,
@@ -18,20 +20,20 @@ export interface NavItem {
   icon: LucideIcon;
 }
 
-// Máximo recomendado: 5 items por rol si quieres que la bottom nav
-// de móvil se vea bien sin apretujarse. Si un módulo crece más,
-// hay que migrar ese rol a un drawer lateral en vez de bottom nav.
 export const NAV_POR_ROL: Record<UserRole, NavItem[]> = {
   super_admin: [
     { label: "Dashboard", path: "/admin/dashboard", icon: LayoutDashboard },
     { label: "Clientes", path: "/admin/clientes", icon: Users },
     { label: "Membresías", path: "/admin/membresias", icon: CreditCard },
+    { label: "Planes", path: "/admin/planes", icon: Tags },
+    { label: "Sedes", path: "/admin/sedes", icon: Building2 },
     { label: "Reportes", path: "/admin/reportes", icon: BarChart3 },
   ],
   admin_sede: [
     { label: "Dashboard", path: "/admin/dashboard", icon: LayoutDashboard },
     { label: "Clientes", path: "/admin/clientes", icon: Users },
     { label: "Membresías", path: "/admin/membresias", icon: CreditCard },
+    { label: "Planes", path: "/admin/planes", icon: Tags },
     { label: "Reportes", path: "/admin/reportes", icon: BarChart3 },
   ],
   recepcionista: [

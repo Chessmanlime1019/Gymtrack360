@@ -10,6 +10,8 @@ import AdminDashboard from "@/pages/admin/Dashboard";
 import AdminClientes from "@/pages/admin/Clientes";
 import AdminMembresias from "@/pages/admin/Membresias";
 import AdminReportes from "@/pages/admin/Reportes";
+import AdminPlanes from "@/pages/admin/Planes";
+import AdminSedes from "@/pages/admin/Sedes";
 
 import ControlAcceso from "@/pages/recepcion/ControlAcceso";
 
@@ -44,9 +46,17 @@ export function AppRoutes() {
           <Route path="/admin/dashboard" element={<AdminDashboard />} />
           <Route path="/admin/clientes" element={<AdminClientes />} />
           <Route path="/admin/membresias" element={<AdminMembresias />} />
+          <Route path="/admin/planes" element={<AdminPlanes />} />
           <Route path="/admin/reportes" element={<AdminReportes />} />
         </Route>
       </Route>
+      <Route element={<ProtectedRoute rolesPermitidos={["super_admin"]} />}>
+        <Route element={<AppShell />}>
+          <Route path="/admin/sedes" element={<AdminSedes />} />
+        </Route>
+      </Route>
+
+
 
       <Route
         element={
