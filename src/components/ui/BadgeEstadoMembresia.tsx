@@ -1,4 +1,4 @@
-﻿import type { MembresiaEstado } from "@/types";
+import type { MembresiaEstado } from "@/types";
 
 
 const ESTILO: Record<MembresiaEstado, string> = {
@@ -14,7 +14,7 @@ const ETIQUETA: Record<MembresiaEstado, string> = {
 
 export function BadgeEstadoMembresia({ estado }: { estado: MembresiaEstado | null }) {
   if (!estado) {
-    return <span className="text-xs text-muted">Sin membresÃ­a</span>;
+    return <span className="text-xs text-muted">Sin membresía</span>;
   }
   return (
     <span className={`text-xs px-2 py-0.5 rounded-full ${ESTILO[estado]}`}>

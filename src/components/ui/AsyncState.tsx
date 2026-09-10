@@ -1,4 +1,4 @@
-﻿import type { ReactNode } from "react";
+import type { ReactNode } from "react";
 import { Loader2, AlertCircle } from "lucide-react";
 
 interface AsyncStateProps {
@@ -15,7 +15,7 @@ export function AsyncState({
   isError,
   isEmpty = false,
   emptyMessage = "No hay datos para mostrar.",
-  errorMessage = "No se pudo cargar la informaciÃ³n. Intenta de nuevo.",
+  errorMessage = "No se pudo cargar la información. Intenta de nuevo.",
   children,
 }: AsyncStateProps) {
   if (isLoading) {

@@ -1,4 +1,4 @@
-﻿import { Component, type ErrorInfo, type ReactNode } from "react";
+import { Component, type ErrorInfo, type ReactNode } from "react";
 
 interface Props {
   children: ReactNode;
@@ -17,7 +17,7 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, info: ErrorInfo) {
-    // AquÃ­ en el futuro podemos mandar esto a un servicio de logging.
+    // Aquí en el futuro podemos mandar esto a un servicio de logging.
     console.error("Error atrapado por ErrorBoundary:", error, info.componentStack);
   }
 
@@ -26,15 +26,15 @@ export class ErrorBoundary extends Component<Props, State> {
       return (
         <div className="min-h-screen flex items-center justify-center bg-background px-4">
           <div className="max-w-sm text-center space-y-4">
-            <h1 className="text-xl font-bold text-red-600">Algo saliÃ³ mal</h1>
+            <h1 className="text-xl font-bold text-red-600">Algo salió mal</h1>
             <p className="text-muted text-sm">
-              {this.state.mensaje ?? "OcurriÃ³ un error inesperado."}
+              {this.state.mensaje ?? "Ocurrió un error inesperado."}
             </p>
             <button
               onClick={() => window.location.reload()}
               className="bg-primary text-background font-semibold rounded-lg px-4 py-2 text-sm"
             >
-              Recargar pÃ¡gina
+              Recargar página
             </button>
           </div>
         </div>

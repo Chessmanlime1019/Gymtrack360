@@ -6,14 +6,40 @@ import { ProfileMenu } from "./ProfileMenu";
 
 export function TopBar() {
   return (
-    <header className="sticky top-0 z-30 flex items-center gap-2 sm:gap-3 border-b border-line bg-surface/95 backdrop-blur px-3 sm:px-6 py-3">
+    <header
+      className="
+        sticky
+        top-0
+        z-30
+        flex
+        items-center
+        gap-2
+        sm:gap-3
+        min-h-[66px]
+        border-b
+        border-[#252a2f]
+        bg-[#0f1113]/95
+        backdrop-blur-xl
+        px-3
+        sm:px-6
+        py-3
+      "
+    >
+
       <GlobalSearch />
+
       <div className="flex items-center gap-1 sm:gap-2 ml-auto">
+
         <QuickAccessMenu />
+
         <NotificationsMenu />
+
         <HelpButton />
+
         <ProfileMenu />
+
       </div>
+
     </header>
   );
 }
