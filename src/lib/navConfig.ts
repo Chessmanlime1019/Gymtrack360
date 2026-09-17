@@ -2,6 +2,7 @@ import type { UserRole } from "@/types";
 import {
   LayoutDashboard,
   Users,
+  UserCog,
   CreditCard,
   Tags,
   Building2,
@@ -24,6 +25,7 @@ export const NAV_POR_ROL: Record<UserRole, NavItem[]> = {
   super_admin: [
     { label: "Dashboard", path: "/admin/dashboard", icon: LayoutDashboard },
     { label: "Clientes", path: "/admin/clientes", icon: Users },
+    { label: "Usuarios", path: "/admin/usuarios", icon: UserCog },
     { label: "Membresías", path: "/admin/membresias", icon: CreditCard },
     { label: "Planes", path: "/admin/planes", icon: Tags },
     { label: "Sedes", path: "/admin/sedes", icon: Building2 },
