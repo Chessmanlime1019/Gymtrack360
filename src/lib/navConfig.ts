@@ -9,6 +9,7 @@ import {
   UserSquare2,
   QrCode,
   Wallet,
+  Search,
   type LucideIcon,
 } from "lucide-react";
 
@@ -36,6 +37,8 @@ export const NAV_POR_ROL: Record<UserRole, NavItem[]> = {
   ],
   recepcionista: [
     { label: "Control de Acceso", path: "/recepcion/control-acceso", icon: ScanLine },
+    { label: "Buscar Cliente", path: "/recepcion/buscar-cliente", icon: Search },
+    { label: "Registrar Pago", path: "/recepcion/registrar-pago", icon: Wallet },
   ],
   profesional: [
     { label: "Dashboard", path: "/profesional/dashboard", icon: LayoutDashboard },
