@@ -18,3 +18,4 @@ dist-ssr/
 
 # Permitir que la plantilla de ejemplo SÍ se suba
 !.env.example
+/nbproject/private/
