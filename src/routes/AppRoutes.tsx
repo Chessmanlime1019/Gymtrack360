@@ -15,6 +15,8 @@ import AdminSedes from "@/pages/admin/Sedes";
 import AdminUsuarios from "@/pages/admin/Usuarios";
 
 import ControlAcceso from "@/pages/recepcion/ControlAcceso";
+import BuscarCliente from "@/pages/recepcion/BuscarCliente";
+import RegistrarPago from "@/pages/recepcion/RegistrarPago";
 
 import ProfesionalDashboard from "@/pages/profesional/Dashboard";
 import MisClientes from "@/pages/profesional/MisClientes";
@@ -67,6 +69,8 @@ export function AppRoutes() {
       >
         <Route element={<AppShell />}>
           <Route path="/recepcion/control-acceso" element={<ControlAcceso />} />
+          <Route path="/recepcion/buscar-cliente" element={<BuscarCliente />} />
+          <Route path="/recepcion/registrar-pago" element={<RegistrarPago />} />
         </Route>
       </Route>
 
