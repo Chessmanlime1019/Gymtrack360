@@ -87,6 +87,56 @@ export async function obtenerMembresias(
   });
 }
 
+export interface MembresiaVigente {
+  id: string;
+  planId: string;
+  planNombre: string;
+  planPrecio: number;
+  sedeOrigenId: string;
+  fechaFin: string;
+}
+
+// Usada por Registrar Pago (recepción): antes de cobrar, hay que saber
+// si el cliente tiene una membresía activa y vigente a la que ligar el pago.
+// Un pago siempre referencia una membresía (no puede quedar "suelto").
+export async function obtenerMembresiaVigenteCliente(
+  clienteId: string
+): Promise<MembresiaVigente | null> {
+  const { data, error } = await supabase
+    .from("membresias")
+    .select("id, plan_id, sede_origen_id, fecha_fin")
+    .eq("cliente_id", clienteId)
+    .eq("estado", "activa")
+    .gte("fecha_fin", new Date().toISOString().slice(0, 10))
+    .order("fecha_fin", { ascending: false })
+    .limit(1)
+    .returns<
+      { id: string; plan_id: string; sede_origen_id: string; fecha_fin: string }[]
+    >();
+
+  if (error) throw error;
+  if (!data || data.length === 0) return null;
+
+  const membresia = data[0];
+
+  const { data: plan, error: errPlan } = await supabase
+    .from("planes")
+    .select("nombre, precio")
+    .eq("id", membresia.plan_id)
+    .single<{ nombre: string; precio: number }>();
+
+  if (errPlan) throw errPlan;
+
+  return {
+    id: membresia.id,
+    planId: membresia.plan_id,
+    planNombre: plan.nombre,
+    planPrecio: plan.precio,
+    sedeOrigenId: membresia.sede_origen_id,
+    fechaFin: membresia.fecha_fin,
+  };
+}
+
 export async function crearMembresia(params: {
   clienteId: string;
   planId: string;
