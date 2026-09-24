@@ -9,21 +9,22 @@ export interface PagoReciente {
 }
 
 export async function registrarPago(params: {
+  pagoId?: string;
   clienteId: string;
-  membresiaId: string;
-  sedeId: string;
+  membresiaId?: string;
+  sedeId?: string;
   monto: number;
-  metodoPago: MetodoPago;
+  metodoPago: MetodoPago | string;
+  comprobanteUrl?: string;
 }) {
-  // Cast puntual porque el insert falla en tipos (mismo patrón usado en
-  // membresiasService/clientesService). "fecha" la pone el default de la
-  // tabla (now()), no hace falta mandarla desde el cliente.
   const { error } = await (supabase.from("pagos") as any).insert({
+    ...(params.pagoId ? { id: params.pagoId } : {}),
     cliente_id: params.clienteId,
     membresia_id: params.membresiaId,
     sede_id: params.sedeId,
     monto: params.monto,
     metodo_pago: params.metodoPago,
+    comprobante_url: params.comprobanteUrl,
   });
 
   if (error) throw error;
@@ -40,6 +41,16 @@ export async function obtenerPagosRecientesCliente(
     .order("fecha", { ascending: false })
     .limit(limite)
     .returns<PagoReciente[]>();
+
+  if (error) throw error;
+  return data ?? [];
+}
+
+export async function obtenerPagos() {
+  const { data, error } = await supabase
+    .from("pagos")
+    .select("*")
+    .order("fecha", { ascending: false });
 
   if (error) throw error;
   return data ?? [];
