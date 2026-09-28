@@ -20,6 +20,7 @@ export default {
         muted: "#8F99A3",
         "ink-2": "#C9D1D9", // texto secundario
         line: "#1E2329", // bordes (antes #2A3036)
+        "line-strong": "#2A3036", // bordes al pasar el mouse o de mayor contraste
         ink: "#FFFFFF",
         success: "#22C55E",
         warning: "#E2A72E",

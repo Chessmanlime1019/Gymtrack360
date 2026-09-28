@@ -17,19 +17,17 @@ export function TopBar() {
         sm:gap-3
         min-h-[66px]
         border-b
-        border-[#252a2f]
-        bg-[#0f1113]/95
+        border-line
+        bg-bar/95
         backdrop-blur-xl
         px-3
         sm:px-6
         py-3
       "
     >
-
       <GlobalSearch />
 
       <div className="flex items-center gap-1 sm:gap-2 ml-auto">
-
         <QuickAccessMenu />
 
         <NotificationsMenu />
@@ -37,9 +35,7 @@ export function TopBar() {
         <HelpButton />
 
         <ProfileMenu />
-
       </div>
-
     </header>
   );
 }
