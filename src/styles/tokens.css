@@ -1,0 +1,103 @@
+/* GYMTRACK 360 - tokens.css (Paso 1: color y tipografia)
+   Colores muestreados de la imagen de referencia (dashboard Super Admin de Cascada Gym).
+
+   Guardar como src/styles/tokens.css e importarlo en la PRIMERA linea de src/index.css:
+        @import "./styles/tokens.css";
+   Los mismos colores estan en tailwind.config.ts: si cambias uno, cambia el otro.
+*/
+
+@import "@fontsource/archivo-black/400.css";
+@import "@fontsource-variable/inter/wght.css";
+
+:root {
+  color-scheme: dark;
+
+  /* Superficies (de mas oscura a mas clara) */
+  --gt-bg: #060a0e;          /* fondo de pagina */
+  --gt-bar: #0b0f13;         /* sidebar, barra superior, navegacion inferior */
+  --gt-card: #12181e;        /* tarjetas y paneles */
+  --gt-card-hover: #171f27;
+  --gt-line: #1e2329;        /* bordes y divisores */
+
+  /* Marca */
+  --gt-primary: #e8570c;
+  --gt-primary-hover: #f26a1b;
+  --gt-primary-press: #c94a08;
+  --gt-primary-soft: color-mix(in srgb, var(--gt-primary) 16%, transparent);
+  --gt-on-primary: #ffffff;  /* usar solo en texto de 14px+ en Archivo Black */
+
+  /* Texto */
+  --gt-ink: #ffffff;
+  --gt-ink-2: #c9d1d9;       /* texto secundario */
+  --gt-muted: #8f99a3;       /* etiquetas y ayudas */
+
+  /* Estados (success es estimado; el resto sale de la imagen) */
+  --gt-success: #22c55e;
+  --gt-warning: #e2a72e;
+  --gt-danger: #f75e53;
+  --gt-info: #4f82f5;
+
+  /* Formas (estimadas de la imagen) */
+  --gt-radius-card: 16px;
+  --gt-radius-control: 12px;
+  --gt-radius-pill: 999px;
+
+  /* Tipografia */
+  --gt-font-display: "Archivo Black", "Arial Black", Impact, sans-serif;
+  --gt-font-body: "Inter Variable", "Inter", system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+
+  --gt-fs-xs: 12px;
+  --gt-fs-sm: 13px;
+  --gt-fs-base: 14px;
+  --gt-fs-md: 16px;
+  --gt-fs-lg: 18px;
+  --gt-fs-xl: 22px;
+  --gt-fs-2xl: clamp(24px, 6vw, 30px);   /* titulo de pagina */
+  --gt-fs-kpi: clamp(28px, 8vw, 36px);   /* numeros grandes de tarjetas */
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  margin: 0;
+  background: var(--gt-bg);
+  color: var(--gt-ink);
+  font-family: var(--gt-font-body);
+  font-size: var(--gt-fs-base);
+  line-height: 1.45;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Archivo Black solo existe en un peso: se desactiva el negrita falso.
+   El prefijo :root sube la especificidad para ganarle al reset de Tailwind. */
+.font-display,
+:root :is(h1, h2, h3, h4),
+:root button:not([role="combobox"]),
+:root [role="button"] {
+  font-family: var(--gt-font-display);
+  font-weight: 400;
+  font-synthesis: none;
+  letter-spacing: -0.01em;
+}
+
+:root :is(h1, h2, h3, h4) {
+  line-height: 1.15;
+}
+
+.gt-kpi {
+  font-family: var(--gt-font-display);
+  font-size: var(--gt-fs-kpi);
+  font-weight: 400;
+  font-synthesis: none;
+  line-height: 1;
+}
+
+/* En telefono, campos a 16px para que el iPhone no haga zoom al escribir */
+@media (max-width: 767px) {
+  :root :is(input, select, textarea) {
+    font-size: 16px;
+  }
+}
