@@ -93,6 +93,15 @@ Deno.serve(async (req) => {
     if (!ROLES_VALIDOS.includes(body.role)) {
       return json({ error: "Rol inválido." }, 400);
     }
+    if (body.role === "super_admin") {
+      // Super Admin es único en este sistema: no se crea desde aquí.
+      // (Si algún día hiciera falta un segundo, se crea a mano en la base
+      // de datos, nunca desde este endpoint público.)
+      return json({ error: "No se puede crear otro Super Admin." }, 400);
+    }
+    if (!body.sedeId) {
+      return json({ error: "Selecciona una sede." }, 400);
+    }
 
     // Cliente con permisos totales: solo para crear el usuario y su perfil.
     const admin = createClient(supabaseUrl, serviceKey);

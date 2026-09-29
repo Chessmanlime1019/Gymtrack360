@@ -6,6 +6,7 @@ export interface ClienteConMembresia {
   nombre: string;
   apellido: string;
   sede_id: string | null;
+  sedeNombre: string | null;
   qr_code: string | null;
   created_at: string;
   membresiaEstado: MembresiaEstado | null;
@@ -27,6 +28,11 @@ interface MembresiaRow {
   fecha_fin: string;
 }
 
+interface SedeMini {
+  id: string;
+  nombre: string;
+}
+
 export async function obtenerClientes(
   sedeId: string | null
 ): Promise<ClienteConMembresia[]> {
@@ -45,8 +51,6 @@ export async function obtenerClientes(
   if (!data || data.length === 0) return [];
 
   // Segunda consulta: la membresía más reciente de cada cliente.
-  // (RLS ya filtra esto por sede automáticamente si el usuario es
-  // admin_sede/recepcionista; para super_admin trae todo lo pedido.)
   const ids = data.map((c) => c.id);
   const { data: membresias, error: errorMem } = await supabase
     .from("membresias")
@@ -64,26 +68,47 @@ export async function obtenerClientes(
     }
   });
 
+  // Tercera consulta: nombre de sede de cada cliente (para mostrarlo en
+  // el panel de detalle, ya que ya no se abre en una ventana modal).
+  const sedeIds = [...new Set(data.map((c) => c.sede_id).filter(Boolean))] as string[];
+  let mapaSedes = new Map<string, string>();
+
+  if (sedeIds.length > 0) {
+    const { data: sedesData, error: errSedes } = await supabase
+      .from("sedes")
+      .select("id, nombre")
+      .in("id", sedeIds)
+      .returns<SedeMini[]>();
+    if (errSedes) throw errSedes;
+    mapaSedes = new Map((sedesData ?? []).map((s) => [s.id, s.nombre]));
+  }
+
   return data.map((c) => {
     const mem = mapaMembresia.get(c.id);
     return {
       ...c,
       membresiaEstado: mem?.estado ?? null,
       membresiaFechaFin: mem?.fecha_fin ?? null,
+      sedeNombre: c.sede_id ? mapaSedes.get(c.sede_id) ?? "Sede eliminada" : null,
     };
   });
 }
 
 export async function actualizarCliente(
   id: string,
-  cambios: { nombre: string; apellido: string }
+  cambios: { nombre: string; apellido: string; sedeId: string }
 ) {
   const { error } = await (supabase.from("profiles") as any)
-    .update(cambios)
+    .update({
+      nombre: cambios.nombre,
+      apellido: cambios.apellido,
+      sede_id: cambios.sedeId,
+    })
     .eq("id", id);
 
   if (error) throw error;
 }
+
 export interface ClienteMini {
   id: string;
   nombre: string;

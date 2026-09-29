@@ -22,8 +22,9 @@ import {
 import { ETIQUETA_ROL } from "@/lib/navConfig";
 import type { UserRole } from "@/types";
 
-const ROLES: UserRole[] = [
-  "super_admin",
+// Super Admin es único y no se crea ni se asigna desde aquí: no aparece
+// en el filtro de arriba ni en los selects de "Nuevo usuario" / "Editar".
+const ROLES_ASIGNABLES: UserRole[] = [
   "admin_sede",
   "recepcionista",
   "profesional",
@@ -43,7 +44,7 @@ export default function AdminUsuarios() {
 
   const [sedeActiva, setSedeActiva] = useState<string | null>(null);
   const [busqueda, setBusqueda] = useState("");
-  const [filtroRol, setFiltroRol] = useState<string>("");
+  const [filtroRol, setFiltroRol] = useState<string>(ROLES_ASIGNABLES[0]);
 
   const [usuarioEditando, setUsuarioEditando] = useState<UsuarioCompleto | null>(null);
   const [usuarioCambiandoEstado, setUsuarioCambiandoEstado] =
@@ -131,7 +132,6 @@ export default function AdminUsuarios() {
     });
   }
 
-  const rolEnEdicion = formEdicion.watch("role");
 
   // ---------------- Activar / desactivar ----------------
   const activoMutacion = useMutation({
@@ -149,8 +149,6 @@ export default function AdminUsuarios() {
     resolver: zodResolver(nuevoUsuarioSchema),
     defaultValues: { role: "recepcionista", sedeId: sedeActiva ?? "" },
   });
-  const rolEnCreacion = formCreacion.watch("role");
-
   const crearMutacion = useMutation({
     mutationFn: (values: NuevoUsuarioFormValues) =>
       crearUsuario({
@@ -263,8 +261,7 @@ export default function AdminUsuarios() {
               onChange={(e) => setFiltroRol(e.target.value)}
               className="rounded-lg bg-surface border border-line px-3 py-2 text-sm text-ink sm:w-48"
             >
-              <option value="">Todos los roles</option>
-              {ROLES.map((r) => (
+              {ROLES_ASIGNABLES.map((r) => (
                 <option key={r} value={r}>
                   {ETIQUETA_ROL[r]}
                 </option>
@@ -440,7 +437,7 @@ export default function AdminUsuarios() {
               {...formEdicion.register("role")}
               className="w-full rounded-lg bg-background border border-line px-3 py-2 text-sm text-ink"
             >
-              {ROLES.map((r) => (
+              {ROLES_ASIGNABLES.map((r) => (
                 <option key={r} value={r}>
                   {ETIQUETA_ROL[r]}
                 </option>
@@ -448,26 +445,25 @@ export default function AdminUsuarios() {
             </select>
           </div>
 
-          {rolEnEdicion !== "super_admin" ? (
-            <div>
-              <label className="block text-sm mb-1 text-ink">Sede</label>
-              <select
-                {...formEdicion.register("sedeId")}
-                className="w-full rounded-lg bg-background border border-line px-3 py-2 text-sm text-ink"
-              >
-                <option value="">Sin sede asignada</option>
-                {sedes?.map((s) => (
-                  <option key={s.id} value={s.id}>
-                    {s.nombre}
-                  </option>
-                ))}
-              </select>
-            </div>
-          ) : (
-            <p className="text-muted text-xs">
-              Los super_admin no están ligados a ninguna sede.
-            </p>
-          )}
+          <div>
+            <label className="block text-sm mb-1 text-ink">Sede</label>
+            <select
+              {...formEdicion.register("sedeId")}
+              className="w-full rounded-lg bg-background border border-line px-3 py-2 text-sm text-ink"
+            >
+              <option value="">Selecciona una sede</option>
+              {sedes?.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.nombre}
+                </option>
+              ))}
+            </select>
+            {formEdicion.formState.errors.sedeId && (
+              <p className="text-danger text-xs mt-1">
+                {formEdicion.formState.errors.sedeId.message}
+              </p>
+            )}
+          </div>
 
           {guardarMutacion.isError && (
             <div className="bg-danger/10 border border-danger/30 text-danger text-sm rounded-lg px-3 py-2">
@@ -627,7 +623,7 @@ export default function AdminUsuarios() {
                 {...formCreacion.register("role")}
                 className="w-full rounded-lg bg-background border border-line px-3 py-2 text-sm text-ink"
               >
-                {ROLES.map((r) => (
+                {ROLES_ASIGNABLES.map((r) => (
                   <option key={r} value={r}>
                     {ETIQUETA_ROL[r]}
                   </option>
@@ -635,29 +631,25 @@ export default function AdminUsuarios() {
               </select>
             </div>
 
-            {rolEnCreacion !== "super_admin" ? (
-              <div>
-                <label className="block text-sm mb-1 text-ink">Sede</label>
-                <select
-                  {...formCreacion.register("sedeId")}
-                  className="w-full rounded-lg bg-background border border-line px-3 py-2 text-sm text-ink"
-                >
-                  <option value="">Selecciona una sede</option>
-                  {sedes?.map((s) => (
-                    <option key={s.id} value={s.id}>
-                      {s.nombre}
-                    </option>
-                  ))}
-                </select>
-                {formCreacion.formState.errors.sedeId && (
-                  <p className="text-danger text-xs mt-1">
-                    {formCreacion.formState.errors.sedeId.message}
-                  </p>
-                )}
-              </div>
-            ) : (
-              <p className="text-muted text-xs self-end pb-2">Sin sede (acceso global).</p>
-            )}
+            <div>
+              <label className="block text-sm mb-1 text-ink">Sede</label>
+              <select
+                {...formCreacion.register("sedeId")}
+                className="w-full rounded-lg bg-background border border-line px-3 py-2 text-sm text-ink"
+              >
+                <option value="">Selecciona una sede</option>
+                {sedes?.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.nombre}
+                  </option>
+                ))}
+              </select>
+              {formCreacion.formState.errors.sedeId && (
+                <p className="text-danger text-xs mt-1">
+                  {formCreacion.formState.errors.sedeId.message}
+                </p>
+              )}
+            </div>
           </div>
 
           {crearMutacion.isError && (
