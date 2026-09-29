@@ -8,3 +8,15 @@ export const usuarioSchema = z.object({
 });
 
 export type UsuarioFormValues = z.infer<typeof usuarioSchema>;
+
+export const nuevoUsuarioSchema = usuarioSchema
+  .extend({
+    email: z.string().email("Ingresa un correo válido"),
+    password: z.string().min(8, "Mínimo 8 caracteres"),
+  })
+  .refine((v) => v.role === "super_admin" || v.sedeId !== "", {
+    message: "Selecciona una sede para este rol",
+    path: ["sedeId"],
+  });
+
+export type NuevoUsuarioFormValues = z.infer<typeof nuevoUsuarioSchema>;

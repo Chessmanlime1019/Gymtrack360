@@ -6,22 +6,18 @@ import { BottomNav } from "./BottomNav";
 
 export function AppShell() {
   return (
-    <div className="min-h-screen bg-[#171b1f] text-[#f5f5f5] md:flex">
-
+    <div className="min-h-dvh bg-background text-ink md:flex">
       <Sidebar />
 
-      <div className="flex-1 flex flex-col min-w-0 bg-[#171b1f]">
-
+      <div className="flex-1 flex flex-col min-w-0 bg-background">
         <TopBar />
 
-        <main className="flex-1 px-4 py-6 md:px-8 md:py-8 pb-24 md:pb-8 bg-[#171b1f]">
+        <main className="flex-1 px-4 py-6 md:px-8 md:py-8 pb-24 md:pb-8 bg-background">
           <Outlet />
         </main>
-
       </div>
 
       <BottomNav />
-
     </div>
   );
 }

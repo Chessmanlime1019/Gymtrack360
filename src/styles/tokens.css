@@ -72,11 +72,14 @@ body {
 }
 
 /* Archivo Black solo existe en un peso: se desactiva el negrita falso.
-   El prefijo :root sube la especificidad para ganarle al reset de Tailwind. */
+   El prefijo :root sube la especificidad para ganarle al reset de Tailwind.
+   OJO: ya NO se aplica a todos los <button> ni [role="button"] -- eso hacia
+   que listas y botones normales (ej. el selector de sedes) se vieran muy
+   gruesos y ocuparan demasiado espacio. Ahora Archivo Black es solo para
+   titulos (h1-h4) y para donde se agregue la clase .font-display a mano
+   (ej. un boton grande de portada). Los botones normales usan Inter. */
 .font-display,
-:root :is(h1, h2, h3, h4),
-:root button:not([role="combobox"]),
-:root [role="button"] {
+:root :is(h1, h2, h3, h4) {
   font-family: var(--gt-font-display);
   font-weight: 400;
   font-synthesis: none;
