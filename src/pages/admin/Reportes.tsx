@@ -11,6 +11,7 @@ import { obtenerAsistencias } from "@/services/asistenciasService";
 import {
   CalendarDays,
   Download,
+  FileText,
   Users,
   CreditCard,
   ScanLine,
@@ -47,12 +48,28 @@ function exportarCSV(encabezados: string[], filas: string[][], nombreArchivo: st
   URL.revokeObjectURL(url);
 }
 
+// Exportar a PDF sin instalar nada: se usa el "Guardar como PDF" que trae
+// el propio navegador (Ctrl+P), pero disparado por el botón y limitado a
+// la tabla del reporte, ocultando sidebar/topbar/filtros/botones. El
+// truco: mientras se imprime, todo el <body> se hace invisible salvo el
+// contenedor con id="reporte-imprimible".
+function exportarPDF() {
+  window.print();
+}
+
 const TABS: { key: ReporteTipo; label: string; icon: React.ElementType }[] = [
   { key: "clientes", label: "Clientes", icon: Users },
   { key: "membresias", label: "Membresías", icon: CreditCard },
   { key: "asistencias", label: "Asistencias", icon: ScanLine },
   { key: "pagos", label: "Pagos", icon: Wallet },
 ];
+
+const TITULOS: Record<ReporteTipo, string> = {
+  clientes: "Reporte de clientes",
+  membresias: "Reporte de membresías",
+  asistencias: "Reporte de asistencias",
+  pagos: "Reporte de pagos",
+};
 
 export default function AdminReportes() {
   const { sesion } = useAuth();
@@ -79,6 +96,7 @@ export default function AdminReportes() {
   }, [todasLasSedes]);
 
   const sedeActivaId = esSuperAdmin ? (sedeFiltro || null) : (sesion?.sedeId ?? null);
+  const nombreSedeActiva = sedeFiltro ? (mapaSedes.get(sedeFiltro) ?? "") : "Todas las sedes";
 
   const hastaFinal = useMemo(() => {
     const d = new Date(hasta);
@@ -191,16 +209,33 @@ export default function AdminReportes() {
     (tab === "asistencias" && loadingAsistencias) ||
     (tab === "pagos" && loadingPagos);
 
-  const datos = tab === "clientes"
-    ? clientesFiltrados
-    : tab === "membresias"
-    ? membresiasFiltradas
-    : tab === "asistencias"
-    ? asistencias ?? []
-    : pagosFiltrados;
+  const datos =
+    tab === "clientes"
+      ? clientesFiltrados
+      : tab === "membresias"
+        ? membresiasFiltradas
+        : tab === "asistencias"
+          ? (asistencias ?? [])
+          : pagosFiltrados;
 
   return (
     <div className="space-y-6">
+      {/* Estilos solo para cuando se imprime / exporta a PDF: se oculta
+          todo menos el bloque #reporte-imprimible (tabla + su encabezado
+          impreso), incluyendo el sidebar y la barra superior del layout. */}
+      <style>{`
+        @media print {
+          body * { visibility: hidden; }
+          #reporte-imprimible, #reporte-imprimible * { visibility: visible; }
+          #reporte-imprimible {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+          }
+          #reporte-encabezado-impreso { display: block !important; }
+        }
+      `}</style>
 
       {/* CABECERA */}
       <div className="flex items-start justify-between gap-4">
@@ -210,28 +245,39 @@ export default function AdminReportes() {
             {esSuperAdmin ? "Reportes globales de todas las sedes" : "Reportes de tu sede"}
           </p>
         </div>
-        <button
-          onClick={exportar}
-          disabled={!datos || datos.length === 0}
-          className="shrink-0 bg-primary text-white font-semibold rounded-lg px-3 py-2 text-sm inline-flex items-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed"
-        >
-          <Download className="w-4 h-4" />
-          <span className="hidden sm:inline">Exportar CSV</span>
-        </button>
+        <div className="flex items-center gap-2 shrink-0">
+          <button
+            onClick={exportarPDF}
+            disabled={!datos || datos.length === 0}
+            className="bg-surface border border-line text-ink font-semibold rounded-lg px-3 py-2 text-sm inline-flex items-center gap-1.5 hover:bg-white/5 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            <FileText className="w-4 h-4" />
+            <span className="hidden sm:inline">Exportar PDF</span>
+          </button>
+          <button
+            onClick={exportar}
+            disabled={!datos || datos.length === 0}
+            className="bg-primary text-ink font-semibold rounded-lg px-3 py-2 text-sm inline-flex items-center gap-1.5 hover:bg-primary-dark transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            <Download className="w-4 h-4" />
+            <span className="hidden sm:inline">Exportar CSV</span>
+          </button>
+        </div>
       </div>
 
-      {/* FILTROS */}
+      {/* FILTROS (no se imprimen) */}
       <div className="flex flex-col sm:flex-row gap-3">
-
         {esSuperAdmin && (
           <select
             value={sedeFiltro}
             onChange={(e) => setSedeFiltro(e.target.value)}
-            className="h-[44px] rounded-lg bg-surface border border-line px-4 text-sm text-ink outline-none sm:w-56 focus:border-primary/70 focus:ring-2 focus:ring-primary/10 transition-all"
+            className="h-11 rounded-lg bg-surface border border-line px-4 text-sm text-ink outline-none sm:w-56 focus:border-primary/70 focus:ring-2 focus:ring-primary/10 transition-colors"
           >
-            <option value="" className="bg-surface">Todas las sedes</option>
+            <option value="">Todas las sedes</option>
             {sedes?.map((s) => (
-              <option key={s.id} value={s.id} className="bg-surface">{s.nombre}</option>
+              <option key={s.id} value={s.id}>
+                {s.nombre}
+              </option>
             ))}
           </select>
         )}
@@ -242,28 +288,26 @@ export default function AdminReportes() {
             type="date"
             value={desde}
             onChange={(e) => setDesde(e.target.value)}
-            className="h-[44px] rounded-lg bg-surface border border-line px-3 text-sm text-ink outline-none focus:border-primary/70 focus:ring-2 focus:ring-primary/10 transition-all"
+            className="h-11 rounded-lg bg-surface border border-line px-3 text-sm text-ink outline-none focus:border-primary/70 focus:ring-2 focus:ring-primary/10 transition-colors"
           />
           <span className="text-muted text-xs">a</span>
           <input
             type="date"
             value={hasta}
             onChange={(e) => setHasta(e.target.value)}
-            className="h-[44px] rounded-lg bg-surface border border-line px-3 text-sm text-ink outline-none focus:border-primary/70 focus:ring-2 focus:ring-primary/10 transition-all"
+            className="h-11 rounded-lg bg-surface border border-line px-3 text-sm text-ink outline-none focus:border-primary/70 focus:ring-2 focus:ring-primary/10 transition-colors"
           />
         </div>
       </div>
 
-      {/* TABS */}
+      {/* TABS (no se imprimen) */}
       <div className="flex gap-1 bg-surface rounded-lg p-1 border border-line overflow-x-auto">
         {TABS.map((t) => (
           <button
             key={t.key}
             onClick={() => setTab(t.key)}
-            className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all whitespace-nowrap ${
-              tab === t.key
-                ? "bg-primary text-white shadow-sm"
-                : "text-muted hover:text-ink hover:bg-black/5"
+            className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors whitespace-nowrap ${
+              tab === t.key ? "bg-primary text-ink" : "text-muted hover:text-ink hover:bg-white/5"
             }`}
           >
             <t.icon className="w-4 h-4" />
@@ -272,166 +316,197 @@ export default function AdminReportes() {
         ))}
       </div>
 
-      {/* CONTENIDO */}
-      <AsyncState
-        isLoading={isLoading}
-        isError={false}
-        isEmpty={!datos || datos.length === 0}
-        emptyMessage={`No hay ${tab} para mostrar en el periodo seleccionado.`}
-      >
-        {/* TABLA DESKTOP */}
-        <div className="hidden md:block bg-surface rounded-[14px] border border-line overflow-hidden shadow-[0_10px_35px_rgba(0,0,0,0.18)]">
-          <table className="w-full text-sm">
-            <thead className="bg-black/[0.03] text-muted text-[11px] uppercase tracking-[0.08em]">
-              <tr>
-                {tab === "clientes" && (
-                  <>
-                    <th className="text-left px-5 py-4 font-semibold">Nombre</th>
-                    <th className="text-left px-5 py-4 font-semibold">Membresía</th>
-                    <th className="text-left px-5 py-4 font-semibold">Vence</th>
-                    <th className="text-left px-5 py-4 font-semibold">Registrado</th>
-                  </>
-                )}
-                {tab === "membresias" && (
-                  <>
-                    <th className="text-left px-5 py-4 font-semibold">Cliente</th>
-                    <th className="text-left px-5 py-4 font-semibold">Plan</th>
-                    <th className="text-left px-5 py-4 font-semibold">Estado</th>
-                    <th className="text-left px-5 py-4 font-semibold">Inicio</th>
-                    <th className="text-left px-5 py-4 font-semibold">Vence</th>
-                  </>
-                )}
-                {tab === "asistencias" && (
-                  <>
-                    <th className="text-left px-5 py-4 font-semibold">Cliente</th>
-                    <th className="text-left px-5 py-4 font-semibold">Sede</th>
-                    <th className="text-left px-5 py-4 font-semibold">Fecha/Hora</th>
-                  </>
-                )}
-                {tab === "pagos" && (
-                  <>
-                    <th className="text-left px-5 py-4 font-semibold">Cliente</th>
-                    <th className="text-left px-5 py-4 font-semibold">Sede</th>
-                    <th className="text-right px-5 py-4 font-semibold">Monto</th>
-                    <th className="text-left px-5 py-4 font-semibold">Método</th>
-                    <th className="text-left px-5 py-4 font-semibold">Fecha</th>
-                  </>
-                )}
-              </tr>
-            </thead>
-            <tbody>
-              {tab === "clientes" &&
-                clientesFiltrados.map((c) => (
-                  <tr key={c.id} className="border-t border-line hover:bg-white/[0.025] transition-colors">
-                    <td className="px-5 py-4 text-ink font-medium">{c.nombre} {c.apellido}</td>
-                    <td className="px-5 py-4"><BadgeEstadoMembresia estado={c.membresiaEstado} /></td>
-                    <td className="px-5 py-4 text-muted text-xs">
-                      {c.membresiaFechaFin ? new Date(c.membresiaFechaFin).toLocaleDateString("es-PE") : "—"}
-                    </td>
-                    <td className="px-5 py-4 text-muted text-xs">
-                      {new Date(c.created_at).toLocaleDateString("es-PE")}
-                    </td>
-                  </tr>
-                ))}
-
-              {tab === "membresias" &&
-                membresiasFiltradas.map((m) => (
-                  <tr key={m.id} className="border-t border-line hover:bg-white/[0.025] transition-colors">
-                    <td className="px-5 py-4 text-ink font-medium">{m.clienteNombre}</td>
-                    <td className="px-5 py-4 text-muted">{m.planNombre}</td>
-                    <td className="px-5 py-4"><BadgeEstadoMembresia estado={m.estado} /></td>
-                    <td className="px-5 py-4 text-muted text-xs">{m.fecha_inicio}</td>
-                    <td className="px-5 py-4 text-muted text-xs">{m.fecha_fin}</td>
-                  </tr>
-                ))}
-
-              {tab === "asistencias" &&
-                (asistencias ?? []).map((a) => (
-                  <tr key={a.id} className="border-t border-line hover:bg-white/[0.025] transition-colors">
-                    <td className="px-5 py-4 text-ink font-medium">{a.clienteNombre}</td>
-                    <td className="px-5 py-4 text-muted text-xs">{mapaSedes.get(a.sede_id) ?? a.sede_id}</td>
-                    <td className="px-5 py-4 text-muted text-xs">
-                      {new Date(a.fecha_hora).toLocaleString("es-PE")}
-                    </td>
-                  </tr>
-                ))}
-
-              {tab === "pagos" &&
-                pagosFiltrados.map((p) => (
-                  <tr key={p.id} className="border-t border-line hover:bg-white/[0.025] transition-colors">
-                    <td className="px-5 py-4 text-ink font-medium">{p.clienteNombre}</td>
-                    <td className="px-5 py-4 text-muted text-xs">{mapaSedes.get(p.sede_id) ?? p.sede_id}</td>
-                    <td className="px-5 py-4 text-right font-medium">{formatMoney(p.monto)}</td>
-                    <td className="px-5 py-4 text-muted">{p.metodo_pago}</td>
-                    <td className="px-5 py-4 text-muted text-xs">
-                      {new Date(p.fecha).toLocaleString("es-PE")}
-                    </td>
-                  </tr>
-                ))}
-            </tbody>
-          </table>
+      {/* CONTENIDO -- esto es lo único que sale en el PDF */}
+      <div id="reporte-imprimible">
+        {/* Encabezado que solo aparece al imprimir/exportar, con el
+            contexto del filtro (sede + rango de fechas) para que el PDF
+            se entienda por sí solo, sin la pantalla alrededor. */}
+        <div id="reporte-encabezado-impreso" className="hidden mb-4">
+          <p className="text-lg font-bold text-ink">{TITULOS[tab]}</p>
+          <p className="text-sm text-muted">
+            {nombreSedeActiva} · {desde} a {hasta}
+          </p>
         </div>
 
-        {/* CARDS MOVIL */}
-        <div className="md:hidden space-y-3">
-          {tab === "clientes" &&
-            clientesFiltrados.map((c) => (
-              <div key={c.id} className="bg-surface rounded-[14px] p-4 border border-line space-y-3">
-                <div className="flex items-start justify-between">
-                  <p className="font-medium text-sm text-ink">{c.nombre} {c.apellido}</p>
-                  <BadgeEstadoMembresia estado={c.membresiaEstado} />
-                </div>
-                <div className="flex items-center justify-between text-xs pt-3 border-t border-line text-muted">
-                  <span>Registrado {new Date(c.created_at).toLocaleDateString("es-PE")}</span>
-                  {c.membresiaFechaFin && <span>Vence {new Date(c.membresiaFechaFin).toLocaleDateString("es-PE")}</span>}
-                </div>
-              </div>
-            ))}
+        <AsyncState
+          isLoading={isLoading}
+          isError={false}
+          isEmpty={!datos || datos.length === 0}
+          emptyMessage={`No hay ${tab} para mostrar en el periodo seleccionado.`}
+        >
+          {/* TABLA DESKTOP */}
+          <div className="hidden md:block bg-surface rounded-xl border border-line overflow-hidden">
+            <table className="w-full text-sm">
+              <thead className="bg-black/20 text-muted text-xs uppercase tracking-wide">
+                <tr>
+                  {tab === "clientes" && (
+                    <>
+                      <th className="text-left px-5 py-4 font-semibold">Nombre</th>
+                      <th className="text-left px-5 py-4 font-semibold">Membresía</th>
+                      <th className="text-left px-5 py-4 font-semibold">Vence</th>
+                      <th className="text-left px-5 py-4 font-semibold">Registrado</th>
+                    </>
+                  )}
+                  {tab === "membresias" && (
+                    <>
+                      <th className="text-left px-5 py-4 font-semibold">Cliente</th>
+                      <th className="text-left px-5 py-4 font-semibold">Plan</th>
+                      <th className="text-left px-5 py-4 font-semibold">Estado</th>
+                      <th className="text-left px-5 py-4 font-semibold">Inicio</th>
+                      <th className="text-left px-5 py-4 font-semibold">Vence</th>
+                    </>
+                  )}
+                  {tab === "asistencias" && (
+                    <>
+                      <th className="text-left px-5 py-4 font-semibold">Cliente</th>
+                      <th className="text-left px-5 py-4 font-semibold">Sede</th>
+                      <th className="text-left px-5 py-4 font-semibold">Fecha/Hora</th>
+                    </>
+                  )}
+                  {tab === "pagos" && (
+                    <>
+                      <th className="text-left px-5 py-4 font-semibold">Cliente</th>
+                      <th className="text-left px-5 py-4 font-semibold">Sede</th>
+                      <th className="text-right px-5 py-4 font-semibold">Monto</th>
+                      <th className="text-left px-5 py-4 font-semibold">Método</th>
+                      <th className="text-left px-5 py-4 font-semibold">Fecha</th>
+                    </>
+                  )}
+                </tr>
+              </thead>
+              <tbody>
+                {tab === "clientes" &&
+                  clientesFiltrados.map((c) => (
+                    <tr key={c.id} className="border-t border-line hover:bg-white/[0.02] transition-colors">
+                      <td className="px-5 py-4 text-ink font-medium">
+                        {c.nombre} {c.apellido}
+                      </td>
+                      <td className="px-5 py-4">
+                        <BadgeEstadoMembresia estado={c.membresiaEstado} />
+                      </td>
+                      <td className="px-5 py-4 text-muted text-xs">
+                        {c.membresiaFechaFin
+                          ? new Date(c.membresiaFechaFin).toLocaleDateString("es-PE")
+                          : "—"}
+                      </td>
+                      <td className="px-5 py-4 text-muted text-xs">
+                        {new Date(c.created_at).toLocaleDateString("es-PE")}
+                      </td>
+                    </tr>
+                  ))}
 
-          {tab === "membresias" &&
-            membresiasFiltradas.map((m) => (
-              <div key={m.id} className="bg-surface rounded-[14px] p-4 border border-line space-y-3">
-                <div className="flex items-start justify-between">
-                  <div>
-                    <p className="font-medium text-sm text-ink">{m.clienteNombre}</p>
-                    <p className="text-muted text-xs mt-1">{m.planNombre}</p>
+                {tab === "membresias" &&
+                  membresiasFiltradas.map((m) => (
+                    <tr key={m.id} className="border-t border-line hover:bg-white/[0.02] transition-colors">
+                      <td className="px-5 py-4 text-ink font-medium">{m.clienteNombre}</td>
+                      <td className="px-5 py-4 text-ink-2">{m.planNombre}</td>
+                      <td className="px-5 py-4">
+                        <BadgeEstadoMembresia estado={m.estado} />
+                      </td>
+                      <td className="px-5 py-4 text-muted text-xs">{m.fecha_inicio}</td>
+                      <td className="px-5 py-4 text-muted text-xs">{m.fecha_fin}</td>
+                    </tr>
+                  ))}
+
+                {tab === "asistencias" &&
+                  (asistencias ?? []).map((a) => (
+                    <tr key={a.id} className="border-t border-line hover:bg-white/[0.02] transition-colors">
+                      <td className="px-5 py-4 text-ink font-medium">{a.clienteNombre}</td>
+                      <td className="px-5 py-4 text-muted text-xs">
+                        {mapaSedes.get(a.sede_id) ?? a.sede_id}
+                      </td>
+                      <td className="px-5 py-4 text-muted text-xs">
+                        {new Date(a.fecha_hora).toLocaleString("es-PE")}
+                      </td>
+                    </tr>
+                  ))}
+
+                {tab === "pagos" &&
+                  pagosFiltrados.map((p) => (
+                    <tr key={p.id} className="border-t border-line hover:bg-white/[0.02] transition-colors">
+                      <td className="px-5 py-4 text-ink font-medium">{p.clienteNombre}</td>
+                      <td className="px-5 py-4 text-muted text-xs">
+                        {mapaSedes.get(p.sede_id) ?? p.sede_id}
+                      </td>
+                      <td className="px-5 py-4 text-right text-ink font-medium">
+                        {formatMoney(p.monto)}
+                      </td>
+                      <td className="px-5 py-4 text-ink-2">{p.metodo_pago}</td>
+                      <td className="px-5 py-4 text-muted text-xs">
+                        {new Date(p.fecha).toLocaleString("es-PE")}
+                      </td>
+                    </tr>
+                  ))}
+              </tbody>
+            </table>
+          </div>
+
+          {/* CARDS MÓVIL (se ocultan al imprimir; la tabla de arriba,
+              aunque esté con "hidden md:block" en pantalla, se muestra
+              igual en el PDF gracias a la regla @media print de arriba) */}
+          <div className="md:hidden space-y-3 print:hidden">
+            {tab === "clientes" &&
+              clientesFiltrados.map((c) => (
+                <div key={c.id} className="bg-surface rounded-xl p-4 border border-line space-y-3">
+                  <div className="flex items-start justify-between">
+                    <p className="font-medium text-sm text-ink">
+                      {c.nombre} {c.apellido}
+                    </p>
+                    <BadgeEstadoMembresia estado={c.membresiaEstado} />
                   </div>
-                  <BadgeEstadoMembresia estado={m.estado} />
+                  <div className="flex items-center justify-between text-xs pt-3 border-t border-line text-muted">
+                    <span>Registrado {new Date(c.created_at).toLocaleDateString("es-PE")}</span>
+                    {c.membresiaFechaFin && (
+                      <span>Vence {new Date(c.membresiaFechaFin).toLocaleDateString("es-PE")}</span>
+                    )}
+                  </div>
                 </div>
-                <div className="flex items-center justify-between text-xs pt-3 border-t border-line text-muted">
-                  <span>{m.fecha_inicio}</span>
-                  <span>{m.fecha_fin}</span>
-                </div>
-              </div>
-            ))}
+              ))}
 
-          {tab === "asistencias" &&
-            (asistencias ?? []).map((a) => (
-              <div key={a.id} className="bg-surface rounded-[14px] p-4 border border-line">
-                <p className="font-medium text-sm text-ink">{a.clienteNombre}</p>
-                <p className="text-muted text-xs mt-1">
-                  {new Date(a.fecha_hora).toLocaleString("es-PE")}
-                </p>
-              </div>
-            ))}
-
-          {tab === "pagos" &&
-            pagosFiltrados.map((p) => (
-              <div key={p.id} className="bg-surface rounded-[14px] p-4 border border-line space-y-2">
-                <div className="flex items-start justify-between">
-                  <p className="font-medium text-sm text-ink">{p.clienteNombre}</p>
-                  <p className="font-medium text-sm text-primary">{formatMoney(p.monto)}</p>
+            {tab === "membresias" &&
+              membresiasFiltradas.map((m) => (
+                <div key={m.id} className="bg-surface rounded-xl p-4 border border-line space-y-3">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <p className="font-medium text-sm text-ink">{m.clienteNombre}</p>
+                      <p className="text-muted text-xs mt-1">{m.planNombre}</p>
+                    </div>
+                    <BadgeEstadoMembresia estado={m.estado} />
+                  </div>
+                  <div className="flex items-center justify-between text-xs pt-3 border-t border-line text-muted">
+                    <span>{m.fecha_inicio}</span>
+                    <span>{m.fecha_fin}</span>
+                  </div>
                 </div>
-                <div className="flex items-center justify-between text-xs text-muted">
-                  <span>{p.metodo_pago}</span>
-                  <span>{new Date(p.fecha).toLocaleString("es-PE")}</span>
-                </div>
-                <p className="text-muted text-xs">{mapaSedes.get(p.sede_id) ?? p.sede_id}</p>
-              </div>
-            ))}
-        </div>
-      </AsyncState>
+              ))}
 
+            {tab === "asistencias" &&
+              (asistencias ?? []).map((a) => (
+                <div key={a.id} className="bg-surface rounded-xl p-4 border border-line">
+                  <p className="font-medium text-sm text-ink">{a.clienteNombre}</p>
+                  <p className="text-muted text-xs mt-1">
+                    {new Date(a.fecha_hora).toLocaleString("es-PE")}
+                  </p>
+                </div>
+              ))}
+
+            {tab === "pagos" &&
+              pagosFiltrados.map((p) => (
+                <div key={p.id} className="bg-surface rounded-xl p-4 border border-line space-y-2">
+                  <div className="flex items-start justify-between">
+                    <p className="font-medium text-sm text-ink">{p.clienteNombre}</p>
+                    <p className="font-medium text-sm text-primary">{formatMoney(p.monto)}</p>
+                  </div>
+                  <div className="flex items-center justify-between text-xs text-muted">
+                    <span>{p.metodo_pago}</span>
+                    <span>{new Date(p.fecha).toLocaleString("es-PE")}</span>
+                  </div>
+                  <p className="text-muted text-xs">{mapaSedes.get(p.sede_id) ?? p.sede_id}</p>
+                </div>
+              ))}
+          </div>
+        </AsyncState>
+      </div>
     </div>
   );
 }
