@@ -1,13 +1,16 @@
+
 import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
+import * as XLSX from "xlsx";
 import { useAuth } from "@/hooks/useAuth";
 import { AsyncState } from "@/components/ui/AsyncState";
 import { BadgeEstadoMembresia } from "@/components/ui/BadgeEstadoMembresia";
 import { obtenerSedesActivas, obtenerTodasLasSedes } from "@/services/sedesService";
-import { obtenerClientes } from "@/services/clientesService";
+import { obtenerClientes, obtenerClientesSimple } from "@/services/clientesService";
 import { obtenerMembresias } from "@/services/membresiasService";
 import { obtenerPagos } from "@/services/pagosService";
 import { obtenerAsistencias } from "@/services/asistenciasService";
+import { obtenerHistorial } from "@/services/historialService";
 import {
   CalendarDays,
   Download,
@@ -16,9 +19,10 @@ import {
   CreditCard,
   ScanLine,
   Wallet,
+  History,
 } from "lucide-react";
 
-type ReporteTipo = "clientes" | "membresias" | "asistencias" | "pagos";
+type ReporteTipo = "clientes" | "membresias" | "asistencias" | "pagos" | "historial";
 
 function primerDiaMes(): string {
   const hoy = new Date();
@@ -33,26 +37,19 @@ function formatMoney(n: number): string {
   return `S/ ${n.toLocaleString("es-PE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
-function exportarCSV(encabezados: string[], filas: string[][], nombreArchivo: string) {
-  const csvContent = [
-    encabezados.join(","),
-    ...filas.map((fila) => fila.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(",")),
-  ].join("\n");
-
-  const blob = new Blob(["\uFEFF" + csvContent], { type: "text/csv;charset=utf-8;" });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = `${nombreArchivo}.csv`;
-  link.click();
-  URL.revokeObjectURL(url);
+// Excel de verdad (.xlsx), no un CSV disfrazado: usa SheetJS.
+// Instalar una vez: npm i xlsx
+function exportarExcel(encabezados: string[], filas: (string | number)[][], nombreArchivo: string) {
+  const hoja = XLSX.utils.aoa_to_sheet([encabezados, ...filas]);
+  hoja["!cols"] = encabezados.map(() => ({ wch: 20 }));
+  const libro = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(libro, hoja, "Reporte");
+  XLSX.writeFile(libro, `${nombreArchivo}.xlsx`);
 }
 
 // Exportar a PDF sin instalar nada: se usa el "Guardar como PDF" que trae
-// el propio navegador (Ctrl+P), pero disparado por el botón y limitado a
-// la tabla del reporte, ocultando sidebar/topbar/filtros/botones. El
-// truco: mientras se imprime, todo el <body> se hace invisible salvo el
-// contenedor con id="reporte-imprimible".
+// el propio navegador, pero disparado por el botón y limitado a la tabla
+// del reporte (ver el bloque <style> y el id="reporte-imprimible" abajo).
 function exportarPDF() {
   window.print();
 }
@@ -62,6 +59,7 @@ const TABS: { key: ReporteTipo; label: string; icon: React.ElementType }[] = [
   { key: "membresias", label: "Membresías", icon: CreditCard },
   { key: "asistencias", label: "Asistencias", icon: ScanLine },
   { key: "pagos", label: "Pagos", icon: Wallet },
+  { key: "historial", label: "Historial", icon: History },
 ];
 
 const TITULOS: Record<ReporteTipo, string> = {
@@ -69,6 +67,7 @@ const TITULOS: Record<ReporteTipo, string> = {
   membresias: "Reporte de membresías",
   asistencias: "Reporte de asistencias",
   pagos: "Reporte de pagos",
+  historial: "Historial de operaciones",
 };
 
 export default function AdminReportes() {
@@ -77,6 +76,7 @@ export default function AdminReportes() {
 
   const [tab, setTab] = useState<ReporteTipo>("clientes");
   const [sedeFiltro, setSedeFiltro] = useState<string>(sesion?.sedeId ?? "");
+  const [clienteFiltro, setClienteFiltro] = useState<string>("");
   const [desde, setDesde] = useState(primerDiaMes());
   const [hasta, setHasta] = useState(hoyISO());
 
@@ -104,6 +104,15 @@ export default function AdminReportes() {
     return d.toISOString();
   }, [hasta]);
 
+  // Para el filtro "Cliente" (solo en Membresías por ahora -- ver nota
+  // en el mensaje: para sumarlo también en Pagos/Asistencias hace falta
+  // confirmar que esos servicios exponen cliente_id).
+  const { data: clientesSimple } = useQuery({
+    queryKey: ["clientes-simple-filtro", sedeActivaId],
+    queryFn: () => obtenerClientesSimple(sedeActivaId),
+    enabled: tab === "membresias",
+  });
+
   const { data: clientes, isLoading: loadingClientes } = useQuery({
     queryKey: ["reporte-clientes", sedeActivaId],
     queryFn: () => obtenerClientes(sedeActivaId),
@@ -128,6 +137,12 @@ export default function AdminReportes() {
     enabled: tab === "pagos",
   });
 
+  const { data: historial, isLoading: loadingHistorial } = useQuery({
+    queryKey: ["reporte-historial", sedeActivaId, desde, hasta],
+    queryFn: () => obtenerHistorial(sedeActivaId, desde, hastaFinal),
+    enabled: tab === "historial",
+  });
+
   const clientesFiltrados = useMemo(() => {
     if (!clientes) return [];
     return clientes.filter((c) => {
@@ -139,9 +154,11 @@ export default function AdminReportes() {
   const membresiasFiltradas = useMemo(() => {
     if (!membresias) return [];
     return membresias.filter((m) => {
-      return m.fecha_inicio >= desde && m.fecha_inicio <= hasta;
+      const enRango = m.fecha_inicio >= desde && m.fecha_inicio <= hasta;
+      const coincideCliente = !clienteFiltro || m.cliente_id === clienteFiltro;
+      return enRango && coincideCliente;
     });
-  }, [membresias, desde, hasta]);
+  }, [membresias, desde, hasta, clienteFiltro]);
 
   const pagosFiltrados = useMemo(() => {
     if (!pagos) return [];
@@ -153,7 +170,7 @@ export default function AdminReportes() {
 
   function exportar() {
     if (tab === "clientes") {
-      exportarCSV(
+      exportarExcel(
         ["Nombre", "Apellido", "Sede", "Membresía", "Vence", "Registrado"],
         clientesFiltrados.map((c) => [
           c.nombre,
@@ -166,7 +183,7 @@ export default function AdminReportes() {
         `reporte_clientes_${desde}_${hasta}`
       );
     } else if (tab === "membresias") {
-      exportarCSV(
+      exportarExcel(
         ["Cliente", "Plan", "Estado", "Inicio", "Vence", "Sede"],
         membresiasFiltradas.map((m) => [
           m.clienteNombre,
@@ -179,7 +196,7 @@ export default function AdminReportes() {
         `reporte_membresias_${desde}_${hasta}`
       );
     } else if (tab === "asistencias") {
-      exportarCSV(
+      exportarExcel(
         ["Cliente", "Sede", "Fecha/Hora"],
         (asistencias ?? []).map((a) => [
           a.clienteNombre,
@@ -189,16 +206,27 @@ export default function AdminReportes() {
         `reporte_asistencias_${desde}_${hasta}`
       );
     } else if (tab === "pagos") {
-      exportarCSV(
+      exportarExcel(
         ["Cliente", "Monto", "Método", "Fecha", "Sede"],
         pagosFiltrados.map((p) => [
           p.clienteNombre,
-          String(p.monto),
+          p.monto,
           p.metodo_pago,
           new Date(p.fecha).toLocaleString("es-PE"),
           mapaSedes.get(p.sede_id) ?? p.sede_id,
         ]),
         `reporte_pagos_${desde}_${hasta}`
+      );
+    } else if (tab === "historial") {
+      exportarExcel(
+        ["Fecha", "Quién", "Acción", "Sede"],
+        (historial ?? []).map((h) => [
+          new Date(h.created_at).toLocaleString("es-PE"),
+          h.actorNombre ?? "Sistema",
+          h.descripcion,
+          h.sedeNombre ?? "—",
+        ]),
+        `historial_operaciones_${desde}_${hasta}`
       );
     }
   }
@@ -207,7 +235,8 @@ export default function AdminReportes() {
     (tab === "clientes" && loadingClientes) ||
     (tab === "membresias" && loadingMembresias) ||
     (tab === "asistencias" && loadingAsistencias) ||
-    (tab === "pagos" && loadingPagos);
+    (tab === "pagos" && loadingPagos) ||
+    (tab === "historial" && loadingHistorial);
 
   const datos =
     tab === "clientes"
@@ -216,13 +245,15 @@ export default function AdminReportes() {
         ? membresiasFiltradas
         : tab === "asistencias"
           ? (asistencias ?? [])
-          : pagosFiltrados;
+          : tab === "pagos"
+            ? pagosFiltrados
+            : (historial ?? []);
 
   return (
     <div className="space-y-6">
       {/* Estilos solo para cuando se imprime / exporta a PDF: se oculta
-          todo menos el bloque #reporte-imprimible (tabla + su encabezado
-          impreso), incluyendo el sidebar y la barra superior del layout. */}
+          todo menos el bloque #reporte-imprimible, incluyendo sidebar
+          y barra superior del layout general. */}
       <style>{`
         @media print {
           body * { visibility: hidden; }
@@ -260,7 +291,7 @@ export default function AdminReportes() {
             className="bg-primary text-ink font-semibold rounded-lg px-3 py-2 text-sm inline-flex items-center gap-1.5 hover:bg-primary-dark transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
           >
             <Download className="w-4 h-4" />
-            <span className="hidden sm:inline">Exportar CSV</span>
+            <span className="hidden sm:inline">Exportar Excel</span>
           </button>
         </div>
       </div>
@@ -277,6 +308,21 @@ export default function AdminReportes() {
             {sedes?.map((s) => (
               <option key={s.id} value={s.id}>
                 {s.nombre}
+              </option>
+            ))}
+          </select>
+        )}
+
+        {tab === "membresias" && (
+          <select
+            value={clienteFiltro}
+            onChange={(e) => setClienteFiltro(e.target.value)}
+            className="h-11 rounded-lg bg-surface border border-line px-4 text-sm text-ink outline-none sm:w-56 focus:border-primary/70 focus:ring-2 focus:ring-primary/10 transition-colors"
+          >
+            <option value="">Todos los clientes</option>
+            {clientesSimple?.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.nombre} {c.apellido}
               </option>
             ))}
           </select>
@@ -318,9 +364,6 @@ export default function AdminReportes() {
 
       {/* CONTENIDO -- esto es lo único que sale en el PDF */}
       <div id="reporte-imprimible">
-        {/* Encabezado que solo aparece al imprimir/exportar, con el
-            contexto del filtro (sede + rango de fechas) para que el PDF
-            se entienda por sí solo, sin la pantalla alrededor. */}
         <div id="reporte-encabezado-impreso" className="hidden mb-4">
           <p className="text-lg font-bold text-ink">{TITULOS[tab]}</p>
           <p className="text-sm text-muted">
@@ -332,7 +375,7 @@ export default function AdminReportes() {
           isLoading={isLoading}
           isError={false}
           isEmpty={!datos || datos.length === 0}
-          emptyMessage={`No hay ${tab} para mostrar en el periodo seleccionado.`}
+          emptyMessage={`No hay ${tab === "historial" ? "operaciones" : tab} para mostrar en el periodo seleccionado.`}
         >
           {/* TABLA DESKTOP */}
           <div className="hidden md:block bg-surface rounded-xl border border-line overflow-hidden">
@@ -370,6 +413,14 @@ export default function AdminReportes() {
                       <th className="text-right px-5 py-4 font-semibold">Monto</th>
                       <th className="text-left px-5 py-4 font-semibold">Método</th>
                       <th className="text-left px-5 py-4 font-semibold">Fecha</th>
+                    </>
+                  )}
+                  {tab === "historial" && (
+                    <>
+                      <th className="text-left px-5 py-4 font-semibold">Fecha</th>
+                      <th className="text-left px-5 py-4 font-semibold">Quién</th>
+                      <th className="text-left px-5 py-4 font-semibold">Acción</th>
+                      <th className="text-left px-5 py-4 font-semibold">Sede</th>
                     </>
                   )}
                 </tr>
@@ -437,13 +488,23 @@ export default function AdminReportes() {
                       </td>
                     </tr>
                   ))}
+
+                {tab === "historial" &&
+                  (historial ?? []).map((h) => (
+                    <tr key={h.id} className="border-t border-line hover:bg-white/[0.02] transition-colors">
+                      <td className="px-5 py-4 text-muted text-xs whitespace-nowrap">
+                        {new Date(h.created_at).toLocaleString("es-PE")}
+                      </td>
+                      <td className="px-5 py-4 text-ink-2">{h.actorNombre}</td>
+                      <td className="px-5 py-4 text-ink">{h.descripcion}</td>
+                      <td className="px-5 py-4 text-muted text-xs">{h.sedeNombre ?? "—"}</td>
+                    </tr>
+                  ))}
               </tbody>
             </table>
           </div>
 
-          {/* CARDS MÓVIL (se ocultan al imprimir; la tabla de arriba,
-              aunque esté con "hidden md:block" en pantalla, se muestra
-              igual en el PDF gracias a la regla @media print de arriba) */}
+          {/* CARDS MÓVIL */}
           <div className="md:hidden space-y-3 print:hidden">
             {tab === "clientes" &&
               clientesFiltrados.map((c) => (
@@ -502,6 +563,18 @@ export default function AdminReportes() {
                     <span>{new Date(p.fecha).toLocaleString("es-PE")}</span>
                   </div>
                   <p className="text-muted text-xs">{mapaSedes.get(p.sede_id) ?? p.sede_id}</p>
+                </div>
+              ))}
+
+            {tab === "historial" &&
+              (historial ?? []).map((h) => (
+                <div key={h.id} className="bg-surface rounded-xl p-4 border border-line space-y-2">
+                  <p className="text-sm text-ink">{h.descripcion}</p>
+                  <div className="flex items-center justify-between text-xs text-muted">
+                    <span>{h.actorNombre}</span>
+                    <span>{new Date(h.created_at).toLocaleString("es-PE")}</span>
+                  </div>
+                  {h.sedeNombre && <p className="text-muted text-xs">{h.sedeNombre}</p>}
                 </div>
               ))}
           </div>
