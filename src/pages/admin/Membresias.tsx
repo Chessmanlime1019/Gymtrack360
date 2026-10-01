@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Ban, Building2, Plus, RotateCw } from "lucide-react";
+import { Ban, Building2, Plus, RotateCw, UserRound } from "lucide-react";
 
 import { useAuth } from "@/hooks/useAuth";
 import { AsyncState } from "@/components/ui/AsyncState";
@@ -191,7 +191,7 @@ export default function AdminMembresias() {
           />
         </div>
       ) : (
-        <TablaMembresias
+        <ListaYPanelMembresias
           membresias={membresias}
           isLoading={isLoading}
           isError={isError}
@@ -317,9 +317,155 @@ export default function AdminMembresias() {
 }
 
 // ===========================================================
-// Tabla + tarjetas móviles. Se separa en su propio componente
-// porque se usa tanto para Super Admin (dentro de la grilla con
-// sedes) como para Admin de Sede (a todo el ancho).
+// Lista + panel para Admin de Sede (mismo patrón que Clientes.tsx /
+// estilo MedCare): a la izquierda cada membresía como tarjeta, a la
+// derecha un panel fijo con el detalle y las acciones (Renovar /
+// Cancelar). No hay campos de texto para editar porque hoy el sistema
+// no permite modificar una membresía existente directamente -- solo
+// renovarla (crea una nueva) o cancelarla.
+// ===========================================================
+function ListaYPanelMembresias({
+  membresias,
+  isLoading,
+  isError,
+  onRenovar,
+  renovarPendiente,
+  onPedirCancelar,
+}: {
+  membresias: MembresiaConDetalle[] | undefined;
+  isLoading: boolean;
+  isError: boolean;
+  onRenovar: (m: MembresiaConDetalle) => void;
+  renovarPendiente: boolean;
+  onPedirCancelar: (m: MembresiaConDetalle) => void;
+}) {
+  const [seleccionadaId, setSeleccionadaId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!membresias || membresias.length === 0) {
+      setSeleccionadaId(null);
+      return;
+    }
+    const sigueEnLista = membresias.some((m) => m.id === seleccionadaId);
+    if (!sigueEnLista) {
+      setSeleccionadaId(membresias[0].id);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [membresias]);
+
+  const seleccionada = membresias?.find((m) => m.id === seleccionadaId) ?? null;
+
+  return (
+    <AsyncState
+      isLoading={isLoading}
+      isError={isError}
+      isEmpty={!membresias || membresias.length === 0}
+      emptyMessage="Todavía no hay membresías registradas en esta sede."
+      errorMessage="No se pudo cargar la lista de membresías."
+    >
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-5 items-start">
+        {/* ---------- LISTA (izquierda) ---------- */}
+        <div className="space-y-3">
+          {membresias?.map((m) => {
+            const activa = m.id === seleccionadaId;
+            return (
+              <button
+                key={m.id}
+                type="button"
+                onClick={() => setSeleccionadaId(m.id)}
+                className={`w-full text-left bg-surface rounded-xl p-4 border transition-colors ${
+                  activa
+                    ? "border-primary/60 ring-1 ring-primary/30"
+                    : "border-line hover:border-line-strong"
+                }`}
+              >
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="w-9 h-9 rounded-full bg-primary/10 border border-primary/15 flex items-center justify-center shrink-0">
+                      <span className="text-primary text-xs font-bold">
+                        {m.clienteNombre?.charAt(0)?.toUpperCase()}
+                      </span>
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-ink font-medium truncate">{m.clienteNombre}</p>
+                      <p className="text-muted text-xs truncate">{m.planNombre}</p>
+                    </div>
+                  </div>
+                  <BadgeEstadoMembresia estado={m.estado} />
+                </div>
+              </button>
+            );
+          })}
+        </div>
+
+        {/* ---------- PANEL (derecha, fijo) ---------- */}
+        <div className="lg:sticky lg:top-4">
+          {!seleccionada ? (
+            <div className="bg-surface rounded-xl border border-line p-6 text-center text-muted text-sm">
+              Selecciona una membresía para ver su información.
+            </div>
+          ) : (
+            <div className="bg-surface rounded-xl border border-line overflow-hidden">
+              <div className="bg-primary px-5 py-4 flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-white/15 flex items-center justify-center shrink-0">
+                  <UserRound className="w-5 h-5 text-ink" />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-ink font-semibold truncate">{seleccionada.clienteNombre}</p>
+                  <p className="text-ink/80 text-xs truncate">{seleccionada.planNombre}</p>
+                </div>
+              </div>
+
+              <div className="p-5">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-[11px] uppercase tracking-wide text-muted mb-1">Estado</p>
+                    <BadgeEstadoMembresia estado={seleccionada.estado} />
+                  </div>
+                  <div>
+                    <p className="text-[11px] uppercase tracking-wide text-muted mb-1">Plan</p>
+                    <p className="text-ink text-sm font-medium">{seleccionada.planNombre}</p>
+                  </div>
+                  <div>
+                    <p className="text-[11px] uppercase tracking-wide text-muted mb-1">Inicio</p>
+                    <p className="text-ink text-sm font-medium">{seleccionada.fecha_inicio}</p>
+                  </div>
+                  <div>
+                    <p className="text-[11px] uppercase tracking-wide text-muted mb-1">Vence</p>
+                    <p className="text-ink text-sm font-medium">{seleccionada.fecha_fin}</p>
+                  </div>
+                </div>
+
+                <div className="flex gap-2 mt-5">
+                  <button
+                    onClick={() => onRenovar(seleccionada)}
+                    disabled={renovarPendiente || seleccionada.estado === "cancelada"}
+                    className="flex-1 inline-flex items-center justify-center gap-2 h-11 bg-primary text-ink font-semibold rounded-lg text-sm hover:bg-primary-dark transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                  >
+                    <RotateCw className="w-4 h-4" />
+                    Renovar
+                  </button>
+                  <button
+                    onClick={() => onPedirCancelar(seleccionada)}
+                    disabled={seleccionada.estado === "cancelada"}
+                    className="inline-flex items-center justify-center gap-2 h-11 px-4 rounded-lg border border-line text-danger hover:bg-danger/10 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                  >
+                    <Ban className="w-4 h-4" />
+                    Cancelar
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </AsyncState>
+  );
+}
+
+// ===========================================================
+// Tabla + tarjetas móviles para Super Admin (dentro de la grilla con
+// sedes a la izquierda).
 // ===========================================================
 function TablaMembresias({
   membresias,
