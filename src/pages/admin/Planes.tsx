@@ -1,8 +1,8 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Building2, Globe, Pencil, Plus, Tags } from "lucide-react";
+import { Building2, Globe, Pencil, Plus, Search, Tags } from "lucide-react";
 
 import { useAuth } from "@/hooks/useAuth";
 import { AsyncState } from "@/components/ui/AsyncState";
@@ -20,12 +20,29 @@ import { planSchema, type PlanFormValues } from "@/schemas/planSchemas";
 export default function AdminPlanes() {
   const { sesion } = useAuth();
   const esSuperAdmin = sesion?.role === "super_admin";
+  const esAdminSede = sesion?.role === "admin_sede";
+  // Admin de Sede puede crear, pero siempre para su propia sede; Super
+  // Admin puede crear tanto globales como de una sede en particular.
+  const puedeCrear = esSuperAdmin || esAdminSede;
   const queryClient = useQueryClient();
 
-  // null = pestaña "Todas las sedes" (planes globales).
-  const [sedeActiva, setSedeActiva] = useState<string | null>(null);
+  // null = pestaña "Todas las sedes" (planes globales). Admin de Sede
+  // arranca directo en su propia sede, que es lo que más le interesa;
+  // Super Admin arranca en "Todas las sedes".
+  const [sedeActiva, setSedeActiva] = useState<string | null>(
+    esSuperAdmin ? null : (sesion?.sedeId ?? null)
+  );
+  const [busqueda, setBusqueda] = useState("");
+  const [filtroEstado, setFiltroEstado] = useState<"" | "activo" | "inactivo">("");
   const [modalAbierto, setModalAbierto] = useState(false);
   const [planEditando, setPlanEditando] = useState<PlanCompleto | null>(null);
+
+  // Un plan se puede editar/activar-desactivar si eres Super Admin, o si
+  // eres Admin de Sede Y el plan es exclusivamente de tu propia sede
+  // (nunca uno global ni el de otra sede).
+  function puedeGestionar(plan: PlanCompleto) {
+    return esSuperAdmin || (esAdminSede && plan.sede_id === sesion?.sedeId);
+  }
 
   const { data: sedes } = useQuery({
     queryKey: ["sedes-activas"],
@@ -46,6 +63,19 @@ export default function AdminPlanes() {
     queryKey: ["admin-planes", sedeActiva],
     queryFn: () => obtenerTodosLosPlanes(sedeActiva),
   });
+
+  const planesFiltrados = useMemo(() => {
+    if (!planes) return [];
+    const termino = busqueda.trim().toLowerCase();
+    return planes.filter((p) => {
+      const coincideNombre = !termino || p.nombre.toLowerCase().includes(termino);
+      const coincideEstado =
+        !filtroEstado ||
+        (filtroEstado === "activo" && p.activo) ||
+        (filtroEstado === "inactivo" && !p.activo);
+      return coincideNombre && coincideEstado;
+    });
+  }, [planes, busqueda, filtroEstado]);
 
   const {
     register,
@@ -87,17 +117,30 @@ export default function AdminPlanes() {
 
   function abrirNuevo() {
     setPlanEditando(null);
-    reset({
-      nombre: "",
-      precio: 0,
-      duracionDias: 30,
-      esMultisede: false,
-      // Si estás viendo una sede en particular, el plan nuevo nace para
-      // esa sede; si estás en "Todas las sedes", nace global. Se puede
-      // cambiar igual desde el propio formulario.
-      alcance: sedeActiva ? "sede" : "todas",
-      sedeId: sedeActiva ?? "",
-    });
+    if (esAdminSede) {
+      // Admin de Sede SIEMPRE crea para su propia sede, sin importar en
+      // qué pestaña esté parado -- nunca puede elegir "todas las sedes".
+      reset({
+        nombre: "",
+        precio: 0,
+        duracionDias: 30,
+        esMultisede: false,
+        alcance: "sede",
+        sedeId: sesion?.sedeId ?? "",
+      });
+    } else {
+      reset({
+        nombre: "",
+        precio: 0,
+        duracionDias: 30,
+        esMultisede: false,
+        // Si estás viendo una sede en particular, el plan nuevo nace para
+        // esa sede; si estás en "Todas las sedes", nace global. Se puede
+        // cambiar igual desde el propio formulario.
+        alcance: sedeActiva ? "sede" : "todas",
+        sedeId: sedeActiva ?? "",
+      });
+    }
     setModalAbierto(true);
   }
 
@@ -132,7 +175,7 @@ export default function AdminPlanes() {
             Los planes pueden ser para todas las sedes o exclusivos de una
           </p>
         </div>
-        {esSuperAdmin && (
+        {puedeCrear && (
           <button
             onClick={abrirNuevo}
             className="shrink-0 inline-flex items-center gap-2 bg-primary text-ink font-semibold rounded-lg h-11 px-4 text-sm hover:bg-primary-dark transition-colors"
@@ -142,6 +185,29 @@ export default function AdminPlanes() {
             <span className="sm:hidden">Nuevo</span>
           </button>
         )}
+      </div>
+
+      {/* ================= FILTROS ================= */}
+      <div className="flex flex-col sm:flex-row gap-3">
+        <div className="relative flex-1">
+          <Search className="w-4 h-4 text-muted absolute left-3 top-1/2 -translate-y-1/2" />
+          <input
+            type="text"
+            value={busqueda}
+            onChange={(e) => setBusqueda(e.target.value)}
+            placeholder="Buscar por nombre..."
+            className="w-full h-11 rounded-lg bg-surface border border-line pl-9 pr-3 text-sm text-ink placeholder:text-muted outline-none focus:border-primary/70 focus:ring-2 focus:ring-primary/10 transition-colors"
+          />
+        </div>
+        <select
+          value={filtroEstado}
+          onChange={(e) => setFiltroEstado(e.target.value as "" | "activo" | "inactivo")}
+          className="h-11 rounded-lg bg-surface border border-line px-4 text-sm text-ink outline-none sm:w-48 focus:border-primary/70 focus:ring-2 focus:ring-primary/10 transition-colors"
+        >
+          <option value="">Todos los estados</option>
+          <option value="activo">Activos</option>
+          <option value="inactivo">Inactivos</option>
+        </select>
       </div>
 
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-[240px_1fr]">
@@ -189,7 +255,7 @@ export default function AdminPlanes() {
           <AsyncState
             isLoading={isLoading}
             isError={isError}
-            isEmpty={!planes || planes.length === 0}
+            isEmpty={!planesFiltrados || planesFiltrados.length === 0}
             emptyMessage={
               sedeActiva
                 ? `Todavía no hay planes exclusivos de ${tituloLista}.`
@@ -206,13 +272,13 @@ export default function AdminPlanes() {
                     <th className="text-left px-4 py-3 font-semibold">Duración</th>
                     <th className="text-left px-4 py-3 font-semibold">Multisede</th>
                     <th className="text-left px-4 py-3 font-semibold">Estado</th>
-                    {esSuperAdmin && (
+                    {puedeCrear && (
                       <th className="px-4 py-3 text-right font-semibold">Acciones</th>
                     )}
                   </tr>
                 </thead>
                 <tbody>
-                  {planes?.map((plan) => (
+                  {planesFiltrados.map((plan) => (
                     <tr key={plan.id} className="border-t border-line">
                       <td className="px-4 py-3 text-ink font-medium">{plan.nombre}</td>
                       <td className="px-4 py-3 text-ink-2">S/ {plan.precio.toFixed(2)}</td>
@@ -221,7 +287,7 @@ export default function AdminPlanes() {
                         {plan.es_multisede ? "Sí" : "No"}
                       </td>
                       <td className="px-4 py-3">
-                        {esSuperAdmin ? (
+                        {puedeGestionar(plan) ? (
                           <button
                             onClick={() => alternarMutacion.mutate(plan)}
                             disabled={alternarMutacion.isPending}
@@ -245,8 +311,9 @@ export default function AdminPlanes() {
                           </span>
                         )}
                       </td>
-                      {esSuperAdmin && (
+                      {puedeCrear && (
                         <td className="px-4 py-3 text-right">
+                          {puedeGestionar(plan) && (
                           <button
                             onClick={() => abrirEdicion(plan)}
                             aria-label="Editar plan"
@@ -254,6 +321,7 @@ export default function AdminPlanes() {
                           >
                             <Pencil className="w-4 h-4" />
                           </button>
+                          )}
                         </td>
                       )}
                     </tr>
@@ -263,7 +331,7 @@ export default function AdminPlanes() {
             </div>
 
             <div className="md:hidden space-y-3">
-              {planes?.map((plan) => (
+              {planesFiltrados.map((plan) => (
                 <div
                   key={plan.id}
                   className="bg-surface rounded-xl p-4 border border-line space-y-2"
@@ -280,7 +348,7 @@ export default function AdminPlanes() {
                         </p>
                       </div>
                     </div>
-                    {esSuperAdmin && (
+                    {puedeGestionar(plan) && (
                       <button
                         onClick={() => abrirEdicion(plan)}
                         aria-label="Editar plan"
@@ -294,7 +362,7 @@ export default function AdminPlanes() {
                     <span className="text-muted">
                       {plan.es_multisede ? "Multisede" : "Una sede"}
                     </span>
-                    {esSuperAdmin ? (
+                    {puedeGestionar(plan) ? (
                       <button
                         onClick={() => alternarMutacion.mutate(plan)}
                         disabled={alternarMutacion.isPending}
@@ -321,7 +389,7 @@ export default function AdminPlanes() {
         </div>
       </div>
 
-      {esSuperAdmin && (
+      {puedeCrear && (
         <Modal
           isOpen={modalAbierto}
           onClose={cerrarModal}
@@ -377,53 +445,64 @@ export default function AdminPlanes() {
               </div>
             </div>
 
-            {/* -------- Alcance: para todas las sedes, o solo una -------- */}
-            <div>
-              <p className="block text-sm mb-2 text-ink">¿Para qué sedes es este plan?</p>
-              <div className="grid grid-cols-2 gap-2">
-                <label
-                  className={`flex items-center gap-2 rounded-lg border px-3 py-2.5 text-sm cursor-pointer transition-colors ${
-                    alcance === "todas"
-                      ? "border-primary bg-primary/10 text-ink"
-                      : "border-line text-ink-2 hover:bg-white/5"
-                  }`}
-                >
-                  <input type="radio" value="todas" {...register("alcance")} className="accent-primary" />
-                  Todas las sedes
-                </label>
-                <label
-                  className={`flex items-center gap-2 rounded-lg border px-3 py-2.5 text-sm cursor-pointer transition-colors ${
-                    alcance === "sede"
-                      ? "border-primary bg-primary/10 text-ink"
-                      : "border-line text-ink-2 hover:bg-white/5"
-                  }`}
-                >
-                  <input type="radio" value="sede" {...register("alcance")} className="accent-primary" />
-                  Solo esta sede
-                </label>
-              </div>
-            </div>
+            {/* -------- Alcance: para todas las sedes, o solo una --------
+                Admin de Sede no elige: siempre crea/edita para su propia
+                sede (ya viene forzado por abrirNuevo/abrirEdicion), así
+                que aquí solo ve un aviso, no los controles. */}
+            {esSuperAdmin ? (
+              <>
+                <div>
+                  <p className="block text-sm mb-2 text-ink">¿Para qué sedes es este plan?</p>
+                  <div className="grid grid-cols-2 gap-2">
+                    <label
+                      className={`flex items-center gap-2 rounded-lg border px-3 py-2.5 text-sm cursor-pointer transition-colors ${
+                        alcance === "todas"
+                          ? "border-primary bg-primary/10 text-ink"
+                          : "border-line text-ink-2 hover:bg-white/5"
+                      }`}
+                    >
+                      <input type="radio" value="todas" {...register("alcance")} className="accent-primary" />
+                      Todas las sedes
+                    </label>
+                    <label
+                      className={`flex items-center gap-2 rounded-lg border px-3 py-2.5 text-sm cursor-pointer transition-colors ${
+                        alcance === "sede"
+                          ? "border-primary bg-primary/10 text-ink"
+                          : "border-line text-ink-2 hover:bg-white/5"
+                      }`}
+                    >
+                      <input type="radio" value="sede" {...register("alcance")} className="accent-primary" />
+                      Solo esta sede
+                    </label>
+                  </div>
+                </div>
 
-            {alcance === "sede" && (
-              <div>
-                <label htmlFor="sedeId" className="block text-sm mb-1 text-ink">
-                  Sede
-                </label>
-                <select
-                  id="sedeId"
-                  {...register("sedeId")}
-                  className="w-full rounded-lg bg-background border border-line px-3 py-2 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-primary"
-                >
-                  <option value="">Selecciona una sede</option>
-                  {sedes?.map((s) => (
-                    <option key={s.id} value={s.id}>
-                      {s.nombre}
-                    </option>
-                  ))}
-                </select>
-                {errors.sedeId && (
-                  <p className="text-danger text-xs mt-1">{errors.sedeId.message}</p>
+                {alcance === "sede" && (
+                  <div>
+                    <label htmlFor="sedeId" className="block text-sm mb-1 text-ink">
+                      Sede
+                    </label>
+                    <select
+                      id="sedeId"
+                      {...register("sedeId")}
+                      className="w-full rounded-lg bg-background border border-line px-3 py-2 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-primary"
+                    >
+                      <option value="">Selecciona una sede</option>
+                      {sedes?.map((s) => (
+                        <option key={s.id} value={s.id}>
+                          {s.nombre}
+                        </option>
+                      ))}
+                    </select>
+                    {errors.sedeId && (
+                      <p className="text-danger text-xs mt-1">{errors.sedeId.message}</p>
+                    )}
+                  </div>
                 )}
+              </>
+            ) : (
+              <div className="rounded-lg border border-line bg-background px-3 py-2.5 text-sm text-ink-2">
+                Este plan será exclusivo de tu sede.
               </div>
             )}
 
