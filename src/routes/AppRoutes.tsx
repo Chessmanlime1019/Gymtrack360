@@ -44,23 +44,27 @@ export function AppRoutes() {
         <Route path="/" element={<RoleRedirect />} />
       </Route>
 
+      {/* Usuarios se movió aquí: Admin de Sede ya puede entrar (gestiona
+          el staff de su propia sede). Usuarios.tsx distingue el rol por
+          dentro y le oculta la columna de sedes y las sedes/roles que no
+          le corresponden. */}
       <Route element={<ProtectedRoute rolesPermitidos={["super_admin", "admin_sede"]} />}>
         <Route element={<AppShell />}>
           <Route path="/admin/dashboard" element={<AdminDashboard />} />
           <Route path="/admin/clientes" element={<AdminClientes />} />
+          <Route path="/admin/usuarios" element={<AdminUsuarios />} />
           <Route path="/admin/membresias" element={<AdminMembresias />} />
           <Route path="/admin/planes" element={<AdminPlanes />} />
           <Route path="/admin/reportes" element={<AdminReportes />} />
         </Route>
       </Route>
-            <Route element={<ProtectedRoute rolesPermitidos={["super_admin"]} />}>
+
+      {/* Sedes sigue siendo exclusivo de Super Admin. */}
+      <Route element={<ProtectedRoute rolesPermitidos={["super_admin"]} />}>
         <Route element={<AppShell />}>
           <Route path="/admin/sedes" element={<AdminSedes />} />
-          <Route path="/admin/usuarios" element={<AdminUsuarios />} />
         </Route>
       </Route>
-
-
 
       <Route
         element={

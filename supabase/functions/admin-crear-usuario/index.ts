@@ -70,7 +70,7 @@ Deno.serve(async (req) => {
 
     const { data: perfilLlamador, error: errPerfil } = await clienteLlamador
       .from("profiles")
-      .select("role")
+      .select("role, sede_id")
       .eq("id", user.id)
       .single();
 
@@ -99,6 +99,20 @@ Deno.serve(async (req) => {
       // de datos, nunca desde este endpoint público.)
       return json({ error: "No se puede crear otro Super Admin." }, 400);
     }
+
+    // Un Admin de Sede solo puede crear staff de SU propia sede, y solo
+    // recepcionista/profesional -- nunca otro admin_sede, nunca para otra
+    // sede. Esto se exige aquí, no solo en la pantalla, porque la pantalla
+    // se puede saltar llamando a esta función directamente.
+    if (perfilLlamador.role === "admin_sede") {
+      if (!["recepcionista", "profesional"].includes(body.role)) {
+        return json({ error: "No tienes permiso para asignar ese rol." }, 403);
+      }
+      if (body.sedeId !== perfilLlamador.sede_id) {
+        return json({ error: "Solo puedes crear usuarios para tu propia sede." }, 403);
+      }
+    }
+
     if (!body.sedeId) {
       return json({ error: "Selecciona una sede." }, 400);
     }

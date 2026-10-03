@@ -3,6 +3,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Ban, Building2, Pencil, Plus, Search, UserCog } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
 import { AsyncState } from "@/components/ui/AsyncState";
 import { Modal } from "@/components/ui/Modal";
 import {
@@ -31,6 +32,11 @@ const ROLES_ASIGNABLES: UserRole[] = [
   "cliente",
 ];
 
+// Admin de Sede solo gestiona su propio staff: recepción y profesionales.
+// No puede crear/ver otro admin_sede (ya tiene el suyo) ni clientes (eso
+// es trabajo de la pantalla Clientes).
+const ROLES_STAFF_SEDE: UserRole[] = ["recepcionista", "profesional"];
+
 const ESTILO_ROL: Record<UserRole, string> = {
   super_admin: "bg-primary/10 text-primary",
   admin_sede: "bg-info/10 text-info",
@@ -40,11 +46,20 @@ const ESTILO_ROL: Record<UserRole, string> = {
 };
 
 export default function AdminUsuarios() {
+  const { sesion } = useAuth();
+  const esSuperAdmin = sesion?.role === "super_admin";
+  const esAdminSede = sesion?.role === "admin_sede";
+  // Qué roles puede asignar/filtrar quien está viendo la pantalla.
+  const rolesDisponibles = esAdminSede ? ROLES_STAFF_SEDE : ROLES_ASIGNABLES;
+
   const queryClient = useQueryClient();
 
-  const [sedeActiva, setSedeActiva] = useState<string | null>(null);
+  // Admin de Sede no elige sede: siempre es la suya, fija.
+  const [sedeActiva, setSedeActiva] = useState<string | null>(
+    esSuperAdmin ? null : (sesion?.sedeId ?? null)
+  );
   const [busqueda, setBusqueda] = useState("");
-  const [filtroRol, setFiltroRol] = useState<string>(ROLES_ASIGNABLES[0]);
+  const [filtroRol, setFiltroRol] = useState<string>(rolesDisponibles[0]);
 
   const [usuarioEditando, setUsuarioEditando] = useState<UsuarioCompleto | null>(null);
   const [usuarioCambiandoEstado, setUsuarioCambiandoEstado] =
@@ -93,13 +108,16 @@ export default function AdminUsuarios() {
     if (!usuarios || !sedeActiva) return [];
     return usuarios.filter((u) => {
       const coincideSede = u.sede_id === sedeActiva;
+      // Admin de Sede solo ve recepción/profesional -- nunca a sí mismo
+      // (admin_sede) ni a los clientes de su sede (esos van en Clientes).
+      const coincideAlcanceRol = esSuperAdmin || ROLES_STAFF_SEDE.includes(u.role);
       const coincideNombre = `${u.nombre} ${u.apellido}`
         .toLowerCase()
         .includes(busqueda.trim().toLowerCase());
       const coincideRol = !filtroRol || u.role === filtroRol;
-      return coincideSede && coincideNombre && coincideRol;
+      return coincideSede && coincideAlcanceRol && coincideNombre && coincideRol;
     });
-  }, [usuarios, sedeActiva, busqueda, filtroRol]);
+  }, [usuarios, sedeActiva, busqueda, filtroRol, esSuperAdmin]);
 
   const sedeSeleccionada = sedes?.find((s) => s.id === sedeActiva) ?? null;
 
@@ -174,7 +192,9 @@ export default function AdminUsuarios() {
       email: "",
       password: "",
       role: "recepcionista",
-      sedeId: sedeActiva ?? "",
+      // Admin de Sede siempre crea para su propia sede, sin importar
+      // nada más (la Edge Function además lo exige del lado servidor).
+      sedeId: esAdminSede ? (sesion?.sedeId ?? "") : (sedeActiva ?? ""),
     });
     setCreandoUsuario(true);
   }
@@ -184,7 +204,9 @@ export default function AdminUsuarios() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
           <h1 className="text-xl md:text-2xl font-bold text-ink">Usuarios</h1>
-          <p className="text-muted text-sm">Gestiona el staff de cada sede</p>
+          <p className="text-muted text-sm">
+            {esSuperAdmin ? "Gestiona el staff de cada sede" : "Gestiona el staff de tu sede"}
+          </p>
         </div>
 
         <button
@@ -208,40 +230,44 @@ export default function AdminUsuarios() {
         </div>
       )}
 
-      <div className="grid grid-cols-1 gap-5 lg:grid-cols-[240px_1fr]">
-        {/* ================= SEDES (solo las 3 reales) ================= */}
-        <div className="bg-surface rounded-xl border border-line overflow-hidden lg:sticky lg:top-4 lg:self-start">
-          <div className="px-4 py-3 border-b border-line">
-            <p className="text-xs font-semibold uppercase tracking-wide text-muted">
-              Sedes
-            </p>
-          </div>
+      <div
+        className={`grid grid-cols-1 gap-5 ${esSuperAdmin ? "lg:grid-cols-[240px_1fr]" : ""}`}
+      >
+        {/* ================= SEDES (solo Super Admin elige) ================= */}
+        {esSuperAdmin && (
+          <div className="bg-surface rounded-xl border border-line overflow-hidden lg:sticky lg:top-4 lg:self-start">
+            <div className="px-4 py-3 border-b border-line">
+              <p className="text-xs font-semibold uppercase tracking-wide text-muted">
+                Sedes
+              </p>
+            </div>
 
-          <div className="flex lg:flex-col overflow-x-auto lg:overflow-visible">
-            {sedes?.map((s) => (
-              <button
-                key={s.id}
-                type="button"
-                onClick={() => setSedeActiva(s.id)}
-                className={`flex items-center gap-2.5 px-4 py-3 text-sm text-left whitespace-nowrap shrink-0 lg:shrink lg:whitespace-normal border-b border-line last:border-b-0 transition-colors ${
-                  sedeActiva === s.id
-                    ? "bg-primary text-ink font-semibold"
-                    : "text-ink-2 hover:bg-white/5"
-                }`}
-              >
-                <Building2 className="w-4 h-4 shrink-0" />
-                <span className="flex-1 truncate">{s.nombre}</span>
-                <span
-                  className={`text-xs rounded-full px-2 py-0.5 ${
-                    sedeActiva === s.id ? "bg-white/15" : "bg-white/5 text-muted"
+            <div className="flex lg:flex-col overflow-x-auto lg:overflow-visible">
+              {sedes?.map((s) => (
+                <button
+                  key={s.id}
+                  type="button"
+                  onClick={() => setSedeActiva(s.id)}
+                  className={`flex items-center gap-2.5 px-4 py-3 text-sm text-left whitespace-nowrap shrink-0 lg:shrink lg:whitespace-normal border-b border-line last:border-b-0 transition-colors ${
+                    sedeActiva === s.id
+                      ? "bg-primary text-ink font-semibold"
+                      : "text-ink-2 hover:bg-white/5"
                   }`}
                 >
-                  {cantidadPorSede.get(s.id) ?? 0}
-                </span>
-              </button>
-            ))}
+                  <Building2 className="w-4 h-4 shrink-0" />
+                  <span className="flex-1 truncate">{s.nombre}</span>
+                  <span
+                    className={`text-xs rounded-full px-2 py-0.5 ${
+                      sedeActiva === s.id ? "bg-white/15" : "bg-white/5 text-muted"
+                    }`}
+                  >
+                    {cantidadPorSede.get(s.id) ?? 0}
+                  </span>
+                </button>
+              ))}
+            </div>
           </div>
-        </div>
+        )}
 
         {/* ================= TABLA DE LA SEDE ELEGIDA ================= */}
         <div className="space-y-4 min-w-0">
@@ -261,7 +287,7 @@ export default function AdminUsuarios() {
               onChange={(e) => setFiltroRol(e.target.value)}
               className="rounded-lg bg-surface border border-line px-3 py-2 text-sm text-ink sm:w-48"
             >
-              {ROLES_ASIGNABLES.map((r) => (
+              {rolesDisponibles.map((r) => (
                 <option key={r} value={r}>
                   {ETIQUETA_ROL[r]}
                 </option>
@@ -437,7 +463,7 @@ export default function AdminUsuarios() {
               {...formEdicion.register("role")}
               className="w-full rounded-lg bg-background border border-line px-3 py-2 text-sm text-ink"
             >
-              {ROLES_ASIGNABLES.map((r) => (
+              {rolesDisponibles.map((r) => (
                 <option key={r} value={r}>
                   {ETIQUETA_ROL[r]}
                 </option>
@@ -445,25 +471,29 @@ export default function AdminUsuarios() {
             </select>
           </div>
 
-          <div>
-            <label className="block text-sm mb-1 text-ink">Sede</label>
-            <select
-              {...formEdicion.register("sedeId")}
-              className="w-full rounded-lg bg-background border border-line px-3 py-2 text-sm text-ink"
-            >
-              <option value="">Selecciona una sede</option>
-              {sedes?.map((s) => (
-                <option key={s.id} value={s.id}>
-                  {s.nombre}
-                </option>
-              ))}
-            </select>
-            {formEdicion.formState.errors.sedeId && (
-              <p className="text-danger text-xs mt-1">
-                {formEdicion.formState.errors.sedeId.message}
-              </p>
-            )}
-          </div>
+          {esSuperAdmin ? (
+            <div>
+              <label className="block text-sm mb-1 text-ink">Sede</label>
+              <select
+                {...formEdicion.register("sedeId")}
+                className="w-full rounded-lg bg-background border border-line px-3 py-2 text-sm text-ink"
+              >
+                <option value="">Selecciona una sede</option>
+                {sedes?.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.nombre}
+                  </option>
+                ))}
+              </select>
+              {formEdicion.formState.errors.sedeId && (
+                <p className="text-danger text-xs mt-1">
+                  {formEdicion.formState.errors.sedeId.message}
+                </p>
+              )}
+            </div>
+          ) : (
+            <p className="text-muted text-xs">Pertenece a tu sede.</p>
+          )}
 
           {guardarMutacion.isError && (
             <div className="bg-danger/10 border border-danger/30 text-danger text-sm rounded-lg px-3 py-2">
@@ -623,7 +653,7 @@ export default function AdminUsuarios() {
                 {...formCreacion.register("role")}
                 className="w-full rounded-lg bg-background border border-line px-3 py-2 text-sm text-ink"
               >
-                {ROLES_ASIGNABLES.map((r) => (
+                {rolesDisponibles.map((r) => (
                   <option key={r} value={r}>
                     {ETIQUETA_ROL[r]}
                   </option>
@@ -631,25 +661,31 @@ export default function AdminUsuarios() {
               </select>
             </div>
 
-            <div>
-              <label className="block text-sm mb-1 text-ink">Sede</label>
-              <select
-                {...formCreacion.register("sedeId")}
-                className="w-full rounded-lg bg-background border border-line px-3 py-2 text-sm text-ink"
-              >
-                <option value="">Selecciona una sede</option>
-                {sedes?.map((s) => (
-                  <option key={s.id} value={s.id}>
-                    {s.nombre}
-                  </option>
-                ))}
-              </select>
-              {formCreacion.formState.errors.sedeId && (
-                <p className="text-danger text-xs mt-1">
-                  {formCreacion.formState.errors.sedeId.message}
-                </p>
-              )}
-            </div>
+            {esSuperAdmin ? (
+              <div>
+                <label className="block text-sm mb-1 text-ink">Sede</label>
+                <select
+                  {...formCreacion.register("sedeId")}
+                  className="w-full rounded-lg bg-background border border-line px-3 py-2 text-sm text-ink"
+                >
+                  <option value="">Selecciona una sede</option>
+                  {sedes?.map((s) => (
+                    <option key={s.id} value={s.id}>
+                      {s.nombre}
+                    </option>
+                  ))}
+                </select>
+                {formCreacion.formState.errors.sedeId && (
+                  <p className="text-danger text-xs mt-1">
+                    {formCreacion.formState.errors.sedeId.message}
+                  </p>
+                )}
+              </div>
+            ) : (
+              <div className="flex items-end">
+                <p className="text-muted text-xs pb-2">Se crea para tu sede.</p>
+              </div>
+            )}
           </div>
 
           {crearMutacion.isError && (

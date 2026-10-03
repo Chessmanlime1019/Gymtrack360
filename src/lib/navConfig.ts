@@ -35,6 +35,10 @@ export const NAV_POR_ROL: Record<UserRole, NavItem[]> = {
   admin_sede: [
     { label: "Dashboard", path: "/admin/dashboard", icon: LayoutDashboard },
     { label: "Clientes", path: "/admin/clientes", icon: Users },
+    // Nuevo: Admin de Sede gestiona el staff (recepción/profesional) de
+    // su propia sede. Usa la misma pantalla que Super Admin
+    // (src/pages/admin/Usuarios.tsx), que ya distingue el rol por dentro.
+    { label: "Usuarios", path: "/admin/usuarios", icon: UserCog },
     { label: "Membresías", path: "/admin/membresias", icon: CreditCard },
     { label: "Planes", path: "/admin/planes", icon: Tags },
     { label: "Reportes", path: "/admin/reportes", icon: BarChart3 },
