@@ -59,7 +59,9 @@ export default function AdminUsuarios() {
     esSuperAdmin ? null : (sesion?.sedeId ?? null)
   );
   const [busqueda, setBusqueda] = useState("");
-  const [filtroRol, setFiltroRol] = useState<string>(rolesDisponibles[0]);
+  // Admin de Sede arranca en "Todos" (recepción + profesional juntos);
+  // Super Admin arranca en el primer rol real, como ya estaba.
+  const [filtroRol, setFiltroRol] = useState<string>(esAdminSede ? "" : rolesDisponibles[0]);
 
   const [usuarioEditando, setUsuarioEditando] = useState<UsuarioCompleto | null>(null);
   const [usuarioCambiandoEstado, setUsuarioCambiandoEstado] =
@@ -287,6 +289,9 @@ export default function AdminUsuarios() {
               onChange={(e) => setFiltroRol(e.target.value)}
               className="rounded-lg bg-surface border border-line px-3 py-2 text-sm text-ink sm:w-48"
             >
+              {/* Admin de Sede sí tiene "Todos" (junta recepción +
+                  profesional de su sede); Super Admin no, a propósito. */}
+              {esAdminSede && <option value="">Todos</option>}
               {rolesDisponibles.map((r) => (
                 <option key={r} value={r}>
                   {ETIQUETA_ROL[r]}
@@ -295,134 +300,153 @@ export default function AdminUsuarios() {
             </select>
           </div>
 
-          <AsyncState
-            isLoading={isLoading}
-            isError={isError}
-            isEmpty={usuariosFiltrados.length === 0}
-            emptyMessage={`No hay usuarios en ${sedeSeleccionada?.nombre ?? "esta sede"} con esos filtros.`}
-            errorMessage="No se pudo cargar la lista de usuarios."
-          >
-            {/* ---------- Tabla (escritorio) ---------- */}
-            <div className="hidden md:block bg-surface rounded-xl border border-line overflow-hidden">
-              <table className="w-full text-sm">
-                <thead className="bg-black/20 text-muted text-xs uppercase tracking-wide">
-                  <tr>
-                    <th className="text-left px-4 py-3 font-semibold">Nombre</th>
-                    <th className="text-left px-4 py-3 font-semibold">Rol</th>
-                    <th className="text-left px-4 py-3 font-semibold">Registrado</th>
-                    <th className="text-left px-4 py-3 font-semibold">Estado</th>
-                    <th className="px-4 py-3 text-right font-semibold">Acciones</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {usuariosFiltrados.map((u) => (
-                    <tr key={u.id} className={`border-t border-line ${!u.activo ? "opacity-60" : ""}`}>
-                      <td className="px-4 py-3 text-ink font-medium">
-                        {u.nombre} {u.apellido}
-                      </td>
-                      <td className="px-4 py-3">
-                        <span className={`text-xs px-2 py-0.5 rounded-full ${ESTILO_ROL[u.role]}`}>
-                          {ETIQUETA_ROL[u.role]}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3 text-muted text-xs">
-                        {new Date(u.created_at).toLocaleDateString("es-PE")}
-                      </td>
-                      <td className="px-4 py-3">
-                        <span
-                          className={`text-xs px-2 py-0.5 rounded-full ${
-                            u.activo ? "bg-success/10 text-success" : "bg-danger/10 text-danger"
-                          }`}
-                        >
-                          {u.activo ? "Activo" : "Inactivo"}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3">
-                        <div className="flex items-center justify-end gap-1">
-                          <button
-                            onClick={() => abrirEdicion(u)}
-                            aria-label="Editar usuario"
-                            className="p-1.5 rounded-md text-muted hover:bg-white/5 hover:text-primary transition-colors"
-                          >
-                            <Pencil className="w-4 h-4" />
-                          </button>
-                          <button
-                            onClick={() => setUsuarioCambiandoEstado(u)}
-                            aria-label={u.activo ? "Desactivar usuario" : "Activar usuario"}
-                            className="p-1.5 rounded-md text-muted hover:bg-danger/10 hover:text-danger transition-colors"
-                          >
-                            <Ban className="w-4 h-4" />
-                          </button>
-                        </div>
-                      </td>
+          {esSuperAdmin ? (
+            <AsyncState
+              isLoading={isLoading}
+              isError={isError}
+              isEmpty={usuariosFiltrados.length === 0}
+              emptyMessage={`No hay usuarios en ${sedeSeleccionada?.nombre ?? "esta sede"} con esos filtros.`}
+              errorMessage="No se pudo cargar la lista de usuarios."
+            >
+              {/* ---------- Tabla (escritorio) ---------- */}
+              <div className="hidden md:block bg-surface rounded-xl border border-line overflow-hidden">
+                <table className="w-full text-sm">
+                  <thead className="bg-black/20 text-muted text-xs uppercase tracking-wide">
+                    <tr>
+                      <th className="text-left px-4 py-3 font-semibold">Nombre</th>
+                      <th className="text-left px-4 py-3 font-semibold">Rol</th>
+                      <th className="text-left px-4 py-3 font-semibold">Registrado</th>
+                      <th className="text-left px-4 py-3 font-semibold">Estado</th>
+                      <th className="px-4 py-3 text-right font-semibold">Acciones</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-
-            {/* ---------- Tarjetas (móvil) ---------- */}
-            <div className="md:hidden space-y-3">
-              {usuariosFiltrados.map((u) => (
-                <div
-                  key={u.id}
-                  className={`bg-surface rounded-xl p-4 border border-line space-y-3 ${
-                    !u.activo ? "opacity-60" : ""
-                  }`}
-                >
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="flex items-center gap-2 min-w-0">
-                      <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                        <UserCog className="w-4 h-4 text-primary" />
-                      </div>
-                      <div className="min-w-0">
-                        <p className="font-medium text-sm text-ink truncate">
+                  </thead>
+                  <tbody>
+                    {usuariosFiltrados.map((u) => (
+                      <tr key={u.id} className={`border-t border-line ${!u.activo ? "opacity-60" : ""}`}>
+                        <td className="px-4 py-3 text-ink font-medium">
                           {u.nombre} {u.apellido}
-                        </p>
-                        <p className="text-muted text-xs truncate">
+                        </td>
+                        <td className="px-4 py-3">
+                          <span className={`text-xs px-2 py-0.5 rounded-full ${ESTILO_ROL[u.role]}`}>
+                            {ETIQUETA_ROL[u.role]}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 text-muted text-xs">
                           {new Date(u.created_at).toLocaleDateString("es-PE")}
-                        </p>
+                        </td>
+                        <td className="px-4 py-3">
+                          <span
+                            className={`text-xs px-2 py-0.5 rounded-full ${
+                              u.activo ? "bg-success/10 text-success" : "bg-danger/10 text-danger"
+                            }`}
+                          >
+                            {u.activo ? "Activo" : "Inactivo"}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3">
+                          <div className="flex items-center justify-end gap-1">
+                            <button
+                              onClick={() => abrirEdicion(u)}
+                              aria-label="Editar usuario"
+                              className="p-1.5 rounded-md text-muted hover:bg-white/5 hover:text-primary transition-colors"
+                            >
+                              <Pencil className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => setUsuarioCambiandoEstado(u)}
+                              aria-label={u.activo ? "Desactivar usuario" : "Activar usuario"}
+                              className="p-1.5 rounded-md text-muted hover:bg-danger/10 hover:text-danger transition-colors"
+                            >
+                              <Ban className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* ---------- Tarjetas (móvil) ---------- */}
+              <div className="md:hidden space-y-3">
+                {usuariosFiltrados.map((u) => (
+                  <div
+                    key={u.id}
+                    className={`bg-surface rounded-xl p-4 border border-line space-y-3 ${
+                      !u.activo ? "opacity-60" : ""
+                    }`}
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                          <UserCog className="w-4 h-4 text-primary" />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="font-medium text-sm text-ink truncate">
+                            {u.nombre} {u.apellido}
+                          </p>
+                          <p className="text-muted text-xs truncate">
+                            {new Date(u.created_at).toLocaleDateString("es-PE")}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-1 shrink-0">
+                        <button
+                          onClick={() => abrirEdicion(u)}
+                          aria-label="Editar usuario"
+                          className="p-1.5 rounded-md text-muted hover:bg-white/5 hover:text-primary transition-colors"
+                        >
+                          <Pencil className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => setUsuarioCambiandoEstado(u)}
+                          aria-label={u.activo ? "Desactivar usuario" : "Activar usuario"}
+                          className="p-1.5 rounded-md text-muted hover:bg-danger/10 hover:text-danger transition-colors"
+                        >
+                          <Ban className="w-4 h-4" />
+                        </button>
                       </div>
                     </div>
-                    <div className="flex items-center gap-1 shrink-0">
-                      <button
-                        onClick={() => abrirEdicion(u)}
-                        aria-label="Editar usuario"
-                        className="p-1.5 rounded-md text-muted hover:bg-white/5 hover:text-primary transition-colors"
+                    <div className="flex items-center justify-between pt-2 border-t border-line">
+                      <span className={`text-xs px-2 py-0.5 rounded-full ${ESTILO_ROL[u.role]}`}>
+                        {ETIQUETA_ROL[u.role]}
+                      </span>
+                      <span
+                        className={`text-xs px-2 py-0.5 rounded-full ${
+                          u.activo ? "bg-success/10 text-success" : "bg-danger/10 text-danger"
+                        }`}
                       >
-                        <Pencil className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={() => setUsuarioCambiandoEstado(u)}
-                        aria-label={u.activo ? "Desactivar usuario" : "Activar usuario"}
-                        className="p-1.5 rounded-md text-muted hover:bg-danger/10 hover:text-danger transition-colors"
-                      >
-                        <Ban className="w-4 h-4" />
-                      </button>
+                        {u.activo ? "Activo" : "Inactivo"}
+                      </span>
                     </div>
                   </div>
-                  <div className="flex items-center justify-between pt-2 border-t border-line">
-                    <span className={`text-xs px-2 py-0.5 rounded-full ${ESTILO_ROL[u.role]}`}>
-                      {ETIQUETA_ROL[u.role]}
-                    </span>
-                    <span
-                      className={`text-xs px-2 py-0.5 rounded-full ${
-                        u.activo ? "bg-success/10 text-success" : "bg-danger/10 text-danger"
-                      }`}
-                    >
-                      {u.activo ? "Activo" : "Inactivo"}
-                    </span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </AsyncState>
+                ))}
+              </div>
+            </AsyncState>
+          ) : (
+            <ListaYPanelUsuarios
+              usuarios={usuariosFiltrados}
+              isLoading={isLoading}
+              isError={isError}
+              form={formEdicion}
+              editando={!!usuarioEditando}
+              usuarioEnEdicion={usuarioEditando}
+              guardando={guardarMutacion.isPending}
+              guardarError={guardarMutacion.isError}
+              onAbrirEdicion={abrirEdicion}
+              onCerrarEdicion={() => setUsuarioEditando(null)}
+              onGuardar={(v) => guardarMutacion.mutate(v)}
+              onPedirCambioEstado={setUsuarioCambiandoEstado}
+              rolesDisponibles={rolesDisponibles}
+            />
+          )}
         </div>
       </div>
 
-      {/* ================= MODAL: editar ================= */}
+      {/* ================= MODAL: editar (solo Super Admin; Admin de
+          Sede edita inline en su panel, más abajo) ================= */}
       <Modal
-        isOpen={!!usuarioEditando}
+        isOpen={esSuperAdmin && !!usuarioEditando}
         onClose={() => setUsuarioEditando(null)}
         title="Editar usuario"
       >
@@ -713,5 +737,264 @@ export default function AdminUsuarios() {
         </form>
       </Modal>
     </div>
+  );
+}
+
+// ===========================================================
+// Lista + panel para Admin de Sede (mismo patrón que Clientes.tsx /
+// estilo MedCare): a la izquierda cada usuario como tarjeta, a la
+// derecha un panel fijo con el detalle. "Editar información" convierte
+// el panel en un formulario ahí mismo -- nunca una ventana modal.
+// Activar/Desactivar sigue pidiendo confirmación en una ventana aparte
+// (la misma que ya existe), solo que el botón que la dispara ahora vive
+// en este panel en vez de en una fila de tabla.
+// ===========================================================
+function ListaYPanelUsuarios({
+  usuarios,
+  isLoading,
+  isError,
+  form,
+  editando,
+  usuarioEnEdicion,
+  guardando,
+  guardarError,
+  onAbrirEdicion,
+  onCerrarEdicion,
+  onGuardar,
+  onPedirCambioEstado,
+  rolesDisponibles,
+}: {
+  usuarios: UsuarioCompleto[];
+  isLoading: boolean;
+  isError: boolean;
+  form: ReturnType<typeof useForm<UsuarioFormValues>>;
+  editando: boolean;
+  usuarioEnEdicion: UsuarioCompleto | null;
+  guardando: boolean;
+  guardarError: boolean;
+  onAbrirEdicion: (u: UsuarioCompleto) => void;
+  onCerrarEdicion: () => void;
+  onGuardar: (values: UsuarioFormValues) => void;
+  onPedirCambioEstado: (u: UsuarioCompleto) => void;
+  rolesDisponibles: UserRole[];
+}) {
+  const [seleccionadaId, setSeleccionadaId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (usuarios.length === 0) {
+      setSeleccionadaId(null);
+      return;
+    }
+    const sigueEnLista = usuarios.some((u) => u.id === seleccionadaId);
+    if (!sigueEnLista) {
+      setSeleccionadaId(usuarios[0].id);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [usuarios]);
+
+  const seleccionada = usuarios.find((u) => u.id === seleccionadaId) ?? null;
+  const editandoEsta = editando && usuarioEnEdicion?.id === seleccionada?.id;
+
+  function seleccionar(u: UsuarioCompleto) {
+    setSeleccionadaId(u.id);
+    if (editando) onCerrarEdicion();
+  }
+
+  return (
+    <AsyncState
+      isLoading={isLoading}
+      isError={isError}
+      isEmpty={usuarios.length === 0}
+      emptyMessage="Todavía no hay usuarios con esos filtros."
+      errorMessage="No se pudo cargar la lista de usuarios."
+    >
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-5 items-start">
+        {/* ---------- LISTA (izquierda) ---------- */}
+        <div className="space-y-3">
+          {usuarios.map((u) => {
+            const activa = u.id === seleccionadaId;
+            return (
+              <button
+                key={u.id}
+                type="button"
+                onClick={() => seleccionar(u)}
+                className={`w-full text-left bg-surface rounded-xl p-4 border transition-colors ${
+                  activa
+                    ? "border-primary/60 ring-1 ring-primary/30"
+                    : "border-line hover:border-line-strong"
+                } ${!u.activo ? "opacity-60" : ""}`}
+              >
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="w-9 h-9 rounded-full bg-primary/10 border border-primary/15 flex items-center justify-center shrink-0">
+                      <UserCog className="w-4 h-4 text-primary" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-ink font-medium truncate">
+                        {u.nombre} {u.apellido}
+                      </p>
+                      <p className="text-muted text-xs truncate">{ETIQUETA_ROL[u.role]}</p>
+                    </div>
+                  </div>
+                  <span
+                    className={`text-xs px-2 py-0.5 rounded-full shrink-0 ${
+                      u.activo ? "bg-success/10 text-success" : "bg-danger/10 text-danger"
+                    }`}
+                  >
+                    {u.activo ? "Activo" : "Inactivo"}
+                  </span>
+                </div>
+              </button>
+            );
+          })}
+        </div>
+
+        {/* ---------- PANEL (derecha, fijo) ---------- */}
+        <div className="lg:sticky lg:top-4">
+          {!seleccionada ? (
+            <div className="bg-surface rounded-xl border border-line p-6 text-center text-muted text-sm">
+              Selecciona un usuario para ver su información.
+            </div>
+          ) : (
+            <div className="bg-surface rounded-xl border border-line overflow-hidden">
+              <div className="bg-primary px-5 py-4 flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-white/15 flex items-center justify-center shrink-0 text-ink font-semibold">
+                  {seleccionada.nombre.charAt(0).toUpperCase()}
+                </div>
+                <div className="min-w-0">
+                  <p className="text-ink font-semibold truncate">
+                    {seleccionada.nombre} {seleccionada.apellido}
+                  </p>
+                  <p className="text-ink/80 text-xs truncate">{ETIQUETA_ROL[seleccionada.role]}</p>
+                </div>
+              </div>
+
+              <div className="p-5">
+                {!editandoEsta ? (
+                  <>
+                    {/* -------- Vista de información -------- */}
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <p className="text-[11px] uppercase tracking-wide text-muted mb-1">Rol</p>
+                        <span className={`text-xs px-2 py-0.5 rounded-full ${ESTILO_ROL[seleccionada.role]}`}>
+                          {ETIQUETA_ROL[seleccionada.role]}
+                        </span>
+                      </div>
+                      <div>
+                        <p className="text-[11px] uppercase tracking-wide text-muted mb-1">Estado</p>
+                        <span
+                          className={`text-xs px-2 py-0.5 rounded-full ${
+                            seleccionada.activo ? "bg-success/10 text-success" : "bg-danger/10 text-danger"
+                          }`}
+                        >
+                          {seleccionada.activo ? "Activo" : "Inactivo"}
+                        </span>
+                      </div>
+                      <div className="col-span-2">
+                        <p className="text-[11px] uppercase tracking-wide text-muted mb-1">
+                          Registrado
+                        </p>
+                        <p className="text-ink text-sm font-medium">
+                          {new Date(seleccionada.created_at).toLocaleDateString("es-PE")}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex gap-2 mt-5">
+                      <button
+                        onClick={() => onAbrirEdicion(seleccionada)}
+                        className="flex-1 inline-flex items-center justify-center gap-2 h-11 bg-primary text-ink font-semibold rounded-lg text-sm hover:bg-primary-dark transition-colors"
+                      >
+                        <Pencil className="w-4 h-4" />
+                        Editar información
+                      </button>
+                      <button
+                        onClick={() => onPedirCambioEstado(seleccionada)}
+                        className="inline-flex items-center justify-center gap-2 h-11 px-4 rounded-lg border border-line text-danger hover:bg-danger/10 transition-colors"
+                      >
+                        <Ban className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    {/* -------- Edición, dentro del mismo panel -------- */}
+                    <form onSubmit={form.handleSubmit(onGuardar)} className="space-y-4">
+                      <p className="text-xs font-semibold uppercase tracking-wide text-muted">
+                        Editar información
+                      </p>
+
+                      <div>
+                        <label className="block text-sm mb-1 text-ink">Nombre</label>
+                        <input
+                          {...form.register("nombre")}
+                          className="w-full h-10 rounded-lg bg-background border border-line px-3 text-sm text-ink outline-none focus:border-primary focus:ring-2 focus:ring-primary/10"
+                        />
+                        {form.formState.errors.nombre && (
+                          <p className="text-danger text-xs mt-1">
+                            {form.formState.errors.nombre.message}
+                          </p>
+                        )}
+                      </div>
+
+                      <div>
+                        <label className="block text-sm mb-1 text-ink">Apellido</label>
+                        <input
+                          {...form.register("apellido")}
+                          className="w-full h-10 rounded-lg bg-background border border-line px-3 text-sm text-ink outline-none focus:border-primary focus:ring-2 focus:ring-primary/10"
+                        />
+                        {form.formState.errors.apellido && (
+                          <p className="text-danger text-xs mt-1">
+                            {form.formState.errors.apellido.message}
+                          </p>
+                        )}
+                      </div>
+
+                      <div>
+                        <label className="block text-sm mb-1 text-ink">Rol</label>
+                        <select
+                          {...form.register("role")}
+                          className="w-full h-10 rounded-lg bg-background border border-line px-3 text-sm text-ink outline-none focus:border-primary focus:ring-2 focus:ring-primary/10"
+                        >
+                          {rolesDisponibles.map((r) => (
+                            <option key={r} value={r}>
+                              {ETIQUETA_ROL[r]}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      {guardarError && (
+                        <div className="bg-danger/10 border border-danger/30 text-danger text-sm rounded-lg px-3 py-2">
+                          No se pudo guardar el cambio. Intenta de nuevo.
+                        </div>
+                      )}
+
+                      <div className="flex gap-2 pt-1">
+                        <button
+                          type="submit"
+                          disabled={guardando}
+                          className="flex-1 h-11 bg-primary text-ink font-semibold rounded-lg text-sm hover:bg-primary-dark transition-colors disabled:opacity-50"
+                        >
+                          {guardando ? "Guardando..." : "Guardar cambios"}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={onCerrarEdicion}
+                          disabled={guardando}
+                          className="h-11 px-4 rounded-lg border border-line text-ink-2 text-sm hover:bg-white/5 disabled:opacity-50"
+                        >
+                          Cancelar
+                        </button>
+                      </div>
+                    </form>
+                  </>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </AsyncState>
   );
 }
