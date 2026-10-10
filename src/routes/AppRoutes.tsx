@@ -22,6 +22,8 @@ import Rutinas from "@/pages/profesional/Rutinas";
 import MiPerfil from "@/pages/cliente/MiPerfil";
 import MiQr from "@/pages/cliente/MiQr";
 import MiMembresia from "@/pages/cliente/MiMembresia";
+import MiCronograma from "@/pages/cliente/MiCronograma";
+import MiPagos from "@/pages/cliente/MiPagos";
 import ForgotPassword from "@/pages/auth/ForgotPassword";
 import ResetPassword from "@/pages/auth/ResetPassword";
 
@@ -81,6 +83,9 @@ export function AppRoutes() {
           <Route path="/cliente/mi-perfil" element={<MiPerfil />} />
           <Route path="/cliente/mi-qr" element={<MiQr />} />
           <Route path="/cliente/mi-membresia" element={<MiMembresia />} />
+          <Route path="/cliente/mi-cronograma" element={<MiCronograma/>} />
+          <Route path="/cliente/mi-pagos" element={<MiPagos/>} />
+
         </Route>
       </Route>
 

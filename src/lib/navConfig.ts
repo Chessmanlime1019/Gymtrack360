@@ -12,6 +12,8 @@ import {
   QrCode,
   Wallet,
   type LucideIcon,
+  TagsIcon,
+  Receipt,
 } from "lucide-react";
 
 export interface NavItem {
@@ -48,6 +50,8 @@ export const NAV_POR_ROL: Record<UserRole, NavItem[]> = {
     { label: "Mi Perfil", path: "/cliente/mi-perfil", icon: UserSquare2 },
     { label: "Mi QR", path: "/cliente/mi-qr", icon: QrCode },
     { label: "Mi Membresía", path: "/cliente/mi-membresia", icon: Wallet },
+    { label: "Mi Cronograma", path: "/cliente/mi-cronograma", icon: TagsIcon },
+    { label: "Mis Pagos", path: "/cliente/mi-pagos", icon: Receipt},
   ],
 };
 
