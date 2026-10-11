@@ -6,6 +6,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { CalendarCheck, Camera, ChevronRight, Dumbbell, KeyRound, MapPin, Pencil, QrCode, Target } from "lucide-react";
 
 import { AsyncState } from "@/components/ui/AsyncState";
+import { PasswordInput } from "@/components/ui/PasswordInput";
 import {
   obtenerMembresiaVigenteCliente,
   type MembresiaVigente,
@@ -558,9 +559,8 @@ export default function MiPerfil() {
                         <label htmlFor="nueva" className="block text-sm mb-1 text-ink">
                           Nueva contraseña
                         </label>
-                        <input
+                        <PasswordInput
                           id="nueva"
-                          type="password"
                           autoComplete="new-password"
                           placeholder="Mínimo 8 caracteres"
                           {...formContrasena.register("nueva")}
@@ -577,9 +577,8 @@ export default function MiPerfil() {
                         <label htmlFor="confirmar" className="block text-sm mb-1 text-ink">
                           Repite la contraseña
                         </label>
-                        <input
+                        <PasswordInput
                           id="confirmar"
-                          type="password"
                           autoComplete="new-password"
                           {...formContrasena.register("confirmar")}
                           className="w-full h-10 rounded-lg bg-background border border-line px-3 text-sm text-ink outline-none focus:border-primary focus:ring-2 focus:ring-primary/10"

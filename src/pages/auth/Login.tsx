@@ -6,6 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Link, useNavigate } from "react-router-dom";
 
 import { useAuth } from "@/hooks/useAuth";
+import { PasswordInput } from "@/components/ui/PasswordInput";
 
 import {
   loginSchema,
@@ -231,9 +232,8 @@ export default function Login() {
                   </svg>
                 </div>
 
-                <input
+                <PasswordInput
                   id="password"
-                  type="password"
                   autoComplete="current-password"
                   {...register("password")}
                   className="

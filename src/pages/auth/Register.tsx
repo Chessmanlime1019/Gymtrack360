@@ -10,6 +10,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 
 import { supabase } from "@/lib/supabaseClient";
+import { PasswordInput } from "@/components/ui/PasswordInput";
 
 import {
   registerSchema,
@@ -435,9 +436,8 @@ export default function Register() {
                 Contraseña
               </label>
 
-              <input
+              <PasswordInput
                 id="password"
-                type="password"
                 autoComplete="new-password"
                 {...register("password")}
                 className="
@@ -476,9 +476,8 @@ export default function Register() {
                 Confirmar contraseña
               </label>
 
-              <input
+              <PasswordInput
                 id="confirmarPassword"
-                type="password"
                 autoComplete="new-password"
                 {...register("confirmarPassword")}
                 className="
