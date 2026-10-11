@@ -7,22 +7,40 @@ export default defineConfig({
         react(),
         VitePWA({
             registerType: "autoUpdate",
-            includeAssets: ["favicon.svg", "robots.txt"],
+            // Archivos de /public que también se guardan para uso sin conexión.
+            includeAssets: [
+                "icons/favicon.ico",
+                "icons/favicon-16.png",
+                "icons/favicon-32.png",
+                "icons/apple-touch-icon.png",
+                "icons/logo-gymtrack.png",
+            ],
             manifest: {
                 name: "GYMTRACK 360",
                 short_name: "GYMTRACK",
-                description: "Sistema de gestión de gimnasios multi-sede",
-                theme_color: "#F15A24",
-                background_color: "#0F1113",
+                description: "Gestión y acceso digital para Cascada Gym: membresías, pagos, rutinas y control de ingreso por QR.",
+                lang: "es-PE",
+                id: "/",
+                start_url: "/",
+                scope: "/",
                 display: "standalone",
+                orientation: "portrait",
+                theme_color: "#0B0F13",
+                background_color: "#060A0E",
+                categories: ["health", "fitness", "lifestyle"],
                 icons: [
-                    { src: "icon-192.png", sizes: "192x192", type: "image/png" },
-                    { src: "icon-512.png", sizes: "512x512", type: "image/png" },
+                    { src: "/icons/icon-192.png", sizes: "192x192", type: "image/png", purpose: "any" },
+                    { src: "/icons/icon-512.png", sizes: "512x512", type: "image/png", purpose: "any" },
+                    { src: "/icons/icon-maskable-192.png", sizes: "192x192", type: "image/png", purpose: "maskable" },
+                    { src: "/icons/icon-maskable-512.png", sizes: "512x512", type: "image/png", purpose: "maskable" },
                 ],
             },
             workbox: {
-                // no cachear las llamadas a Supabase, necesitamos datos frescos siempre
+                // No se guarda nada de Supabase: los datos deben ser siempre frescos.
                 runtimeCaching: [],
+                cleanupOutdatedCaches: true,
+                // El archivo principal pesa ~1.9 MB; este límite evita que el plugin lo ignore.
+                maximumFileSizeToCacheInBytes: 4 * 1024 * 1024,
             },
         }),
     ],
