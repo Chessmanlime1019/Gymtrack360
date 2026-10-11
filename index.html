@@ -1,16 +1,57 @@
-<!-- Dentro de <head> en index.html (reemplaza el <title>, viewport y el favicon que tengas) -->
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-<title>GYMTRACK 360</title>
-<meta name="description" content="Gestión y acceso para Cascada Gym." />
 
-<meta name="theme-color" content="#0B0F13" />
-<link rel="manifest" href="/manifest.webmanifest" />
-<link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32.png" />
-<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
 
-<!-- iPhone: abrir como app -->
-<meta name="apple-mobile-web-app-capable" content="yes" />
-<meta name="mobile-web-app-capable" content="yes" />
-<meta name="apple-mobile-web-app-title" content="GYMTRACK" />
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <!-- Configuración de pantalla para PC y dispositivos móviles -->
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover"
+    />
+
+    <!-- Información de GYMTRACK 360 -->
+    <title>GYMTRACK 360</title>
+    <meta
+      name="description"
+      content="Gestión y acceso digital para Cascada Gym."
+    />
+
+    <!-- Color de la interfaz del navegador -->
+    <meta name="theme-color" content="#0B0F13" />
+
+    <!-- Icono de la aplicación -->
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="32x32"
+      href="/icons/favicon-32.png"
+    />
+
+    <!-- Configuración PWA -->
+    <link rel="manifest" href="/manifest.webmanifest" />
+
+    <!-- Icono para dispositivos Apple -->
+    <link
+      rel="apple-touch-icon"
+      href="/icons/apple-touch-icon.png"
+    />
+
+    <!-- Configuración para iPhone y otros dispositivos móviles -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="GYMTRACK" />
+    <meta
+      name="apple-mobile-web-app-status-bar-style"
+      content="black-translucent"
+    />
+  </head>
+
+  <body class="bg-background text-white">
+    <!-- Contenedor principal de React -->
+    <div id="root"></div>
+
+    <!-- Punto de entrada de la aplicación Vite + React -->
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
