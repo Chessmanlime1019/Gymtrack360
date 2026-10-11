@@ -33,10 +33,7 @@ interface PlanRow {
   duracion_dias: number;
   es_multisede: boolean;
 }
-interface SedeRow {
-  id: string;
-  nombre: string;
-}
+
 interface PagoRow {
   id: string;
   membresia_id: string | null;

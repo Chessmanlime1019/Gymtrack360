@@ -8,6 +8,38 @@ export interface PagoReciente {
   fecha: string;
 }
 
+export interface PagoConDetalle {
+  id: string;
+  cliente_id: string;
+  clienteNombre: string;
+  sede_id: string;
+  sedeNombre: string;
+  membresia_id: string | null;
+  monto: number;
+  metodo_pago: string;
+  fecha: string;
+}
+
+interface PagoRow {
+  id: string;
+  cliente_id: string;
+  sede_id: string;
+  membresia_id: string | null;
+  monto: number;
+  metodo_pago: string;
+  fecha: string;
+}
+
+interface ClienteMiniNombre {
+  id: string;
+  nombre: string;
+  apellido: string;
+}
+interface SedeMini {
+  id: string;
+  nombre: string;
+}
+
 export async function registrarPago(params: {
   pagoId?: string;
   clienteId: string;
@@ -46,12 +78,49 @@ export async function obtenerPagosRecientesCliente(
   return data ?? [];
 }
 
-export async function obtenerPagos() {
-  const { data, error } = await supabase
+// Historial completo, filtrado por sede y con el nombre del cliente y de
+// la sede ya resueltos (antes esta función no filtraba nada y devolvía
+// las filas crudas sin nombres -- lo usa tanto Reportes como el nuevo
+// historial de Registrar Pago).
+export async function obtenerPagos(sedeId: string | null): Promise<PagoConDetalle[]> {
+  let query = supabase
     .from("pagos")
-    .select("*")
+    .select("id, cliente_id, sede_id, membresia_id, monto, metodo_pago, fecha")
     .order("fecha", { ascending: false });
 
+  if (sedeId) {
+    query = query.eq("sede_id", sedeId);
+  }
+
+  const { data, error } = await query.returns<PagoRow[]>();
   if (error) throw error;
-  return data ?? [];
+  if (!data || data.length === 0) return [];
+
+  const clienteIds = [...new Set(data.map((p) => p.cliente_id))];
+  const sedeIds = [...new Set(data.map((p) => p.sede_id).filter(Boolean))];
+
+  const [{ data: clientesData, error: errCli }, { data: sedesData, error: errSedes }] =
+    await Promise.all([
+      supabase
+        .from("profiles")
+        .select("id, nombre, apellido")
+        .in("id", clienteIds)
+        .returns<ClienteMiniNombre[]>(),
+      supabase.from("sedes").select("id, nombre").in("id", sedeIds).returns<SedeMini[]>(),
+    ]);
+
+  if (errCli) throw errCli;
+  if (errSedes) throw errSedes;
+
+  const mapaClientes = new Map((clientesData ?? []).map((c) => [c.id, c]));
+  const mapaSedes = new Map((sedesData ?? []).map((s) => [s.id, s.nombre]));
+
+  return data.map((p) => {
+    const cliente = mapaClientes.get(p.cliente_id);
+    return {
+      ...p,
+      clienteNombre: cliente ? `${cliente.nombre} ${cliente.apellido}` : "Cliente",
+      sedeNombre: mapaSedes.get(p.sede_id) ?? "Sede",
+    };
+  });
 }

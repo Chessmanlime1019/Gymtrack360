@@ -13,7 +13,7 @@ import {
   crearUsuario,
   type UsuarioCompleto,
 } from "@/services/usuariosService";
-import { obtenerTodasLasSedes, type SedeCompleta } from "@/services/sedesService";
+import { obtenerTodasLasSedes } from "@/services/sedesService";
 import {
   usuarioSchema,
   type UsuarioFormValues,
