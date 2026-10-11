@@ -1,4 +1,5 @@
-import { useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useSearchParams } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -50,7 +51,8 @@ const MAX_DIAS = 7;
 /* ====================================================================== */
 export default function Rutinas() {
   const queryClient = useQueryClient();
-  const [editor, setEditor] = useState<{ rutina: RutinaDetalle | null } | null>(null);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [editor, setEditor] = useState<{ rutina: RutinaDetalle | null; clienteId?: string } | null>(null);
   const [seleccionId, setSeleccionId] = useState<string | null>(null);
   const [busqueda, setBusqueda] = useState("");
   const [filtroEstado, setFiltroEstado] = useState<"todas" | "activas" | "inactivas">("todas");
@@ -91,6 +93,15 @@ export default function Rutinas() {
     onError: () => avisar("error", "No se pudo eliminar la rutina."),
   });
 
+  // Llegar con ?cliente=ID abre el editor con ese cliente ya elegido.
+  const clienteParam = searchParams.get("cliente");
+  useEffect(() => {
+    if (clienteParam && perfil.data?.sede_id) {
+      setEditor({ rutina: null, clienteId: clienteParam });
+      setSearchParams({}, { replace: true });
+    }
+  }, [clienteParam, perfil.data?.sede_id]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const rutinas = rutinasQ.data ?? [];
   const filtradas = useMemo(() => {
     const q = busqueda.trim().toLowerCase();
@@ -108,6 +119,7 @@ export default function Rutinas() {
     return (
       <RutinaEditor
         inicial={editor.rutina}
+        clienteInicial={editor.clienteId}
         profesionalId={perfil.data.id}
         sedeId={perfil.data.sede_id}
         onCancelar={() => setEditor(null)}
@@ -350,12 +362,14 @@ const nuevoUid = () => `ej-${Date.now()}-${contadorUid++}`;
 
 function RutinaEditor({
   inicial,
+  clienteInicial,
   profesionalId,
   sedeId,
   onCancelar,
   onGuardado,
 }: {
   inicial: RutinaDetalle | null;
+  clienteInicial?: string;
   profesionalId: string;
   sedeId: string | null;
   onCancelar: () => void;
@@ -399,18 +413,25 @@ function RutinaEditor({
   const {
     register,
     handleSubmit,
+    setValue,
     formState: { errors },
   } = useForm<RutinaFormValues>({
     resolver: zodResolver(rutinaSchema),
     defaultValues: {
       nombre: inicial?.nombre ?? "",
-      clienteId: inicial?.clienteId ?? "",
+      clienteId: inicial?.clienteId ?? clienteInicial ?? "",
       objetivo: inicial?.objetivo ?? "",
       nivel: inicial?.nivel ?? "",
       semanas: inicial?.semanas ? String(inicial.semanas) : "",
       descripcion: inicial?.descripcion ?? "",
     },
   });
+
+  // Las opciones del selector llegan después: se vuelve a fijar el cliente cuando están.
+  useEffect(() => {
+    const id = inicial?.clienteId ?? clienteInicial;
+    if (id && (clientesQ.data ?? []).some((c) => c.id === id)) setValue("clienteId", id);
+  }, [clientesQ.data]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const guardar = useMutation({
     mutationFn: (v: RutinaFormValues) =>

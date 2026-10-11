@@ -3,6 +3,7 @@
 import { Sidebar } from "./Sidebar";
 import { TopBar } from "./TopBar";
 import { BottomNav } from "./BottomNav";
+import { InstalarApp } from "@/components/pwa/InstalarApp";
 
 export function AppShell() {
   return (
@@ -18,6 +19,7 @@ export function AppShell() {
       </div>
 
       <BottomNav />
+      <InstalarApp />
     </div>
   );
 }
