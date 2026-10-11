@@ -1,0 +1,47 @@
+name: Supabase keep-alive
+
+# Hace una consulta pequeña a Supabase cada 3 días para que el proyecto
+# gratuito no se pause por inactividad (se pausa tras ~7 días sin uso).
+on:
+  schedule:
+    - cron: "0 15 */3 * *" # 15:00 UTC = 10:00 hora de Lima
+  workflow_dispatch: {} # permite ejecutarlo a mano desde la pestaña Actions
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Consultar la base de datos (REST)
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+        run: |
+          if [ -z "$SUPABASE_URL" ] || [ -z "$SUPABASE_ANON_KEY" ]; then
+            echo "Faltan los secrets SUPABASE_URL y/o SUPABASE_ANON_KEY"
+            exit 1
+          fi
+
+          status=$(curl -s -o /tmp/respuesta.json -w "%{http_code}" \
+            --max-time 30 --retry 3 --retry-delay 5 \
+            "$SUPABASE_URL/rest/v1/sedes?select=id&limit=1" \
+            -H "apikey: $SUPABASE_ANON_KEY" \
+            -H "Authorization: Bearer $SUPABASE_ANON_KEY")
+
+          echo "Código HTTP: $status"
+          if [ "$status" -lt 200 ] || [ "$status" -ge 300 ]; then
+            echo "La consulta falló:"
+            cat /tmp/respuesta.json
+            exit 1
+          fi
+          echo "Supabase respondió correctamente."
+
+      - name: Comprobar el servicio de autenticación
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+        run: |
+          status=$(curl -s -o /dev/null -w "%{http_code}" --max-time 30 --retry 3 --retry-delay 5 \
+            "$SUPABASE_URL/auth/v1/health" -H "apikey: $SUPABASE_ANON_KEY")
+          echo "Auth health: $status"
+          [ "$status" -eq 200 ]
