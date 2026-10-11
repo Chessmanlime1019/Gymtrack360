@@ -1,461 +1,187 @@
-import { useState } from "react";
-
-import {
-  useMutation,
-  useQuery,
-  useQueryClient,
-} from "@tanstack/react-query";
-
-import QRCode from "react-qr-code";
-
-import {
-  RefreshCw,
-  Copy,
-  Check,
-} from "lucide-react";
-
-import { supabase } from "@/lib/supabaseClient";
-
-import { useAuth } from "@/hooks/useAuth";
+import { useRef, useState } from "react";
+import { Link } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
+import { QRCodeCanvas } from "qrcode.react";
+import { Copy, Download, Maximize2, MapPin, ShieldAlert, Sun, X } from "lucide-react";
 
 import { AsyncState } from "@/components/ui/AsyncState";
+import { obtenerMiPerfil, obtenerMiSede } from "@/services/perfilService";
+import { obtenerMembresiaVigenteCliente } from "@/services/membresiasService";
 
-import type { Profile } from "@/types";
-
-async function obtenerMiQr(
-  userId: string
-): Promise<string | null> {
-  const { data, error } = await supabase
-    .from("profiles")
-    .select("qr_code")
-    .eq("id", userId)
-    .single<Pick<Profile, "qr_code">>();
-
-  if (error) throw error;
-
-  return data?.qr_code ?? null;
-}
-
-async function generarYGuardarQr(
-  userId: string
-): Promise<string> {
-  const nuevoCodigo = `GT360-${crypto.randomUUID()}`;
-
-  const { error } = await (supabase.from("profiles") as any)
-    .update({ qr_code: nuevoCodigo })
-    .eq("id", userId);
-
-  if (error) throw error;
-
-  return nuevoCodigo;
+function diasHasta(fechaFin: string): number {
+  const hoy = new Date();
+  hoy.setHours(0, 0, 0, 0);
+  const fin = new Date(`${fechaFin.slice(0, 10)}T00:00:00`);
+  return Math.round((fin.getTime() - hoy.getTime()) / 86_400_000);
 }
 
 export default function MiQr() {
-  const { sesion } = useAuth();
-
-  const queryClient = useQueryClient();
-
-  const userId = sesion?.userId;
-
+  const canvasRef = useRef<HTMLDivElement>(null);
+  const [pantallaCompleta, setPantallaCompleta] = useState(false);
   const [copiado, setCopiado] = useState(false);
 
-  const {
-    data: qrCode,
-    isLoading,
-    isError,
-  } = useQuery({
-    queryKey: ["mi-qr", userId],
-    queryFn: () => obtenerMiQr(userId!),
-    enabled: !!userId,
+  const perfil = useQuery({ queryKey: ["mi-perfil"], queryFn: obtenerMiPerfil });
+  const sede = useQuery({
+    queryKey: ["mi-sede", perfil.data?.sede_id],
+    queryFn: () => obtenerMiSede(perfil.data!.sede_id!),
+    enabled: !!perfil.data?.sede_id,
+  });
+  const membresia = useQuery({
+    queryKey: ["mi-membresia-vigente", perfil.data?.id],
+    queryFn: () => obtenerMembresiaVigenteCliente(perfil.data!.id),
+    enabled: !!perfil.data,
   });
 
-  const generarMutacion = useMutation({
-    mutationFn: () => generarYGuardarQr(userId!),
+  const codigo = perfil.data?.qr_code ?? null;
+  const dias = membresia.data ? diasHasta(membresia.data.fechaFin) : null;
+  const vigente = dias !== null && dias >= 0;
 
-    onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: ["mi-qr", userId],
-      });
-    },
-  });
+  let estado: { texto: string; clase: string };
+  if (membresia.isLoading) estado = { texto: "Verificando…", clase: "bg-muted/15 text-muted" };
+  else if (!vigente) estado = { texto: "Sin membresía activa", clase: "bg-danger/10 text-danger" };
+  else if (dias === 0) estado = { texto: "Vence hoy", clase: "bg-danger/10 text-danger" };
+  else if ((dias ?? 99) <= 7) estado = { texto: `Vence en ${dias} días`, clase: "bg-warning/10 text-warning" };
+  else estado = { texto: "Membresía activa", clase: "bg-success/10 text-success" };
 
-  async function copiarCodigo() {
-    if (!qrCode) return;
-
+  async function copiar() {
+    if (!codigo) return;
     try {
-      await navigator.clipboard.writeText(qrCode);
-
+      await navigator.clipboard.writeText(codigo);
       setCopiado(true);
-
       setTimeout(() => setCopiado(false), 2000);
     } catch {
-      // Si el navegador bloquea el clipboard (poco común),
-      // el usuario igual puede seleccionar el texto a mano.
+      /* sin permiso de portapapeles: el código sigue visible en pantalla */
     }
   }
 
+  function descargar() {
+    const canvas = canvasRef.current?.querySelector("canvas");
+    if (!canvas) return;
+    const enlace = document.createElement("a");
+    enlace.href = canvas.toDataURL("image/png");
+    enlace.download = "mi-qr-gymtrack360.png";
+    enlace.click();
+  }
+
   return (
-    <div className="max-w-xl mx-auto space-y-7">
-
-      {/* =====================================================
-          CABECERA
-      ===================================================== */}
-      <div>
-
-        <h1 className="text-2xl md:text-[28px] font-bold tracking-tight text-white">
-          Mi QR
-        </h1>
-
-        <p className="text-[#89939d] text-sm mt-1">
-          Muestra este código en recepción para registrar tu ingreso
-        </p>
-
+    <div className="max-w-md mx-auto space-y-5">
+      <div className="text-center">
+        <h1 className="text-2xl text-ink">Mi QR</h1>
+        <p className="text-muted text-sm mt-1">Muéstralo en recepción para entrar al gimnasio.</p>
       </div>
 
-      {/* =====================================================
-          CONTENIDO
-      ===================================================== */}
       <AsyncState
-        isLoading={isLoading}
-        isError={isError}
-        errorMessage="No se pudo cargar tu código QR. Intenta de nuevo."
+        isLoading={perfil.isLoading}
+        isError={perfil.isError}
+        errorMessage="No se pudo cargar tu código."
       >
-        {qrCode ? (
-
-          <div
-            className="
-              bg-[#1a1e22]
-              rounded-[16px]
-              border
-              border-[#30363d]
-              overflow-hidden
-              shadow-[0_10px_35px_rgba(0,0,0,0.18)]
-            "
-          >
-
-            {/* CABECERA DE TARJETA */}
-            <div
-              className="
-                px-5
-                py-4
-                border-b
-                border-[#2a3036]
-                flex
-                items-center
-                gap-3
-              "
-            >
-
-              <div
-                className="
-                  w-10
-                  h-10
-                  rounded-lg
-                  bg-[#f15a24]/10
-                  border
-                  border-[#f15a24]/15
-                  flex
-                  items-center
-                  justify-center
-                "
-              >
-
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="20"
-                  height="20"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="1.8"
-                  className="text-[#f15a24]"
-                >
-                  <rect
-                    width="5"
-                    height="5"
-                    x="3"
-                    y="3"
-                    rx="1"
-                  />
-                  <rect
-                    width="5"
-                    height="5"
-                    x="16"
-                    y="3"
-                    rx="1"
-                  />
-                  <rect
-                    width="5"
-                    height="5"
-                    x="3"
-                    y="16"
-                    rx="1"
-                  />
-                  <path d="M16 16h2v2h-2zM20 20h1v1h-1zM16 20h2v1h-2zM20 16h1v2h-1z" />
-                </svg>
-
-              </div>
-
-              <div>
-
-                <p className="text-white text-sm font-semibold">
-                  Código de acceso
-                </p>
-
-                <p className="text-[#89939d] text-xs mt-0.5">
-                  Preséntalo en recepción
-                </p>
-
-              </div>
-
-            </div>
-
-            {/* QR */}
-            <div className="p-6 md:p-8">
-
-              <div
-                className="
-                  relative
-                  bg-white
-                  rounded-[16px]
-                  p-6
-                  md:p-8
-                  flex
-                  justify-center
-                  shadow-[0_10px_30px_rgba(0,0,0,0.20)]
-                "
-              >
-
-                <QRCode
-                  value={qrCode}
-                  size={220}
-                />
-
-              </div>
-
-              {/* USUARIO */}
-              <div className="text-center mt-6">
-
-                <p className="text-white font-semibold text-base">
-                  {sesion?.nombre} {sesion?.apellido}
-                </p>
-
-                <p className="text-[#89939d] text-xs mt-1">
-                  {sesion?.email}
-                </p>
-
-              </div>
-
-              {/* DIVISOR */}
-              <div className="border-t border-[#2a3036] mt-6 pt-5">
-
-                <p className="text-[#89939d] text-xs text-center mb-3">
-                  ¿No se puede escanear?
-                  Muestra o dicta este código
-                </p>
-
-                {/* CODIGO */}
-                <div
-                  className="
-                    flex
-                    items-center
-                    gap-2
-                    bg-[#171b1f]
-                    rounded-lg
-                    border
-                    border-[#30363d]
-                    px-3
-                    py-2.5
-                    focus-within:border-[#f15a24]/70
-                    transition-colors
-                  "
-                >
-
-                  <span
-                    className="
-                      flex-1
-                      font-mono
-                      text-xs
-                      text-[#f15a24]
-                      truncate
-                    "
-                  >
-                    {qrCode}
-                  </span>
-
-                  <button
-                    onClick={copiarCodigo}
-                    aria-label="Copiar código"
-                    className="
-                      shrink-0
-                      p-2
-                      rounded-lg
-                      text-[#89939d]
-                      hover:bg-[#f15a24]/10
-                      hover:text-[#f15a24]
-                      transition-colors
-                    "
-                  >
-                    {copiado ? (
-                      <Check className="w-4 h-4 text-[#f15a24]" />
-                    ) : (
-                      <Copy className="w-4 h-4" />
-                    )}
-                  </button>
-
-                </div>
-
-                {/* ESTADO COPIADO */}
-                <div
-                  className={`
-                    h-5
-                    mt-2
-                    text-center
-                    text-[11px]
-                    text-[#f15a24]
-                    transition-opacity
-                    ${copiado ? "opacity-100" : "opacity-0"}
-                  `}
-                >
-                  Código copiado
-                </div>
-
-              </div>
-
-            </div>
-
-          </div>
-
-        ) : (
-
-          <div
-            className="
-              bg-[#1a1e22]
-              rounded-[16px]
-              p-8
-              border
-              border-[#30363d]
-              text-center
-              shadow-[0_10px_35px_rgba(0,0,0,0.18)]
-            "
-          >
-
-            {/* ICONO */}
-            <div
-              className="
-                w-16
-                h-16
-                mx-auto
-                rounded-2xl
-                bg-[#f15a24]/10
-                border
-                border-[#f15a24]/15
-                flex
-                items-center
-                justify-center
-                mb-5
-              "
-            >
-
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="30"
-                height="30"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.6"
-                className="text-[#f15a24]"
-              >
-                <rect
-                  width="5"
-                  height="5"
-                  x="3"
-                  y="3"
-                  rx="1"
-                />
-                <rect
-                  width="5"
-                  height="5"
-                  x="16"
-                  y="3"
-                  rx="1"
-                />
-                <rect
-                  width="5"
-                  height="5"
-                  x="3"
-                  y="16"
-                  rx="1"
-                />
-                <path d="M16 16h2v2h-2zM20 20h1v1h-1zM16 20h2v1h-2zM20 16h1v2h-1z" />
-              </svg>
-
-            </div>
-
-            <p className="text-white text-sm font-medium">
-              Todavía no tienes un código QR generado.
-            </p>
-
-            <p className="text-[#89939d] text-xs mt-2 max-w-sm mx-auto">
-              Genera tu código personal para utilizarlo
-              al ingresar al gimnasio.
-            </p>
-
-            <button
-              onClick={() => generarMutacion.mutate()}
-              disabled={generarMutacion.isPending}
-              className="
-                mt-6
-                bg-[#f15a24]
-                text-white
-                font-semibold
-                rounded-lg
-                px-5
-                py-2.5
-                text-sm
-                inline-flex
-                items-center
-                gap-2
-                shadow-[0_8px_25px_rgba(241,90,36,0.18)]
-                hover:bg-[#ff6930]
-                hover:shadow-[0_10px_30px_rgba(241,90,36,0.24)]
-                transition-all
-                disabled:opacity-50
-                disabled:cursor-not-allowed
-              "
-            >
-
-              <RefreshCw
-                className={`
-                  w-4
-                  h-4
-                  ${
-                    generarMutacion.isPending
-                      ? "animate-spin"
-                      : ""
-                  }
-                `}
-              />
-
-              {generarMutacion.isPending
-                ? "Generando..."
-                : "Generar mi QR"}
-
-            </button>
-
-            {generarMutacion.isError && (
-              <p className="text-red-400 text-xs mt-4">
-                No se pudo generar el código. Intenta de nuevo.
+        {perfil.data && (
+          <div className="bg-surface border border-line rounded-3xl overflow-hidden">
+            <div className="bg-primary px-5 py-4 text-center">
+              <p className="text-white text-lg font-semibold">
+                {perfil.data.nombre} {perfil.data.apellido}
               </p>
-            )}
+              <p className="text-white/85 text-xs mt-1 inline-flex items-center gap-1.5">
+                <MapPin size={13} /> {sede.data?.nombre ?? "Sin sede asignada"}
+              </p>
+            </div>
 
+            <div className="p-6 space-y-5">
+              <div className="flex justify-center">
+                <span className={`text-xs font-semibold px-3 py-1 rounded-full ${estado.clase}`}>{estado.texto}</span>
+              </div>
+
+              {codigo ? (
+                <>
+                  {/* El QR siempre va sobre blanco puro para que el lector lo detecte. */}
+                  <div ref={canvasRef} className="mx-auto w-fit bg-white p-4 rounded-2xl">
+                    <QRCodeCanvas value={codigo} size={232} level="M" bgColor="#ffffff" fgColor="#000000" />
+                  </div>
+
+                  <div className="text-center">
+                    <p className="text-muted text-[11px] uppercase tracking-wide">Tu código</p>
+                    <p className="text-ink text-xs font-mono break-all mt-1">{codigo}</p>
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setPantallaCompleta(true)}
+                      className="min-h-[48px] rounded-xl bg-primary hover:bg-primary-dark text-white text-xs font-semibold inline-flex flex-col items-center justify-center gap-0.5"
+                    >
+                      <Maximize2 size={16} /> Ampliar
+                    </button>
+                    <button
+                      type="button"
+                      onClick={descargar}
+                      className="min-h-[48px] rounded-xl border border-line-strong text-ink-2 hover:border-primary hover:text-primary text-xs font-semibold inline-flex flex-col items-center justify-center gap-0.5"
+                    >
+                      <Download size={16} /> Descargar
+                    </button>
+                    <button
+                      type="button"
+                      onClick={copiar}
+                      className="min-h-[48px] rounded-xl border border-line-strong text-ink-2 hover:border-primary hover:text-primary text-xs font-semibold inline-flex flex-col items-center justify-center gap-0.5"
+                    >
+                      <Copy size={16} /> {copiado ? "¡Copiado!" : "Copiar"}
+                    </button>
+                  </div>
+
+                  <p className="text-muted text-xs flex items-start gap-2 bg-bar rounded-xl p-3">
+                    <Sun size={14} className="text-primary shrink-0 mt-0.5" />
+                    Sube el brillo de tu pantalla al máximo para que el lector lo escanee más rápido. Si no tienes
+                    celular, dicta tu código a recepción.
+                  </p>
+                </>
+              ) : (
+                <p className="text-sm text-ink-2 bg-bar rounded-xl p-4 text-center">
+                  Tu código QR todavía no fue generado. Pídelo en recepción.
+                </p>
+              )}
+
+              {!membresia.isLoading && !vigente && (
+                <div className="rounded-xl border border-danger/30 bg-danger/5 p-4 text-sm">
+                  <p className="text-danger font-semibold inline-flex items-center gap-2">
+                    <ShieldAlert size={16} /> Tu acceso será rechazado
+                  </p>
+                  <p className="text-ink-2 text-xs mt-1">Necesitas una membresía vigente para entrar.</p>
+                  <Link
+                    to="/cliente/pagar"
+                    className="mt-3 flex items-center justify-center min-h-[44px] rounded-xl bg-primary hover:bg-primary-dark text-white text-sm font-semibold"
+                  >
+                    Pagar mi membresía
+                  </Link>
+                </div>
+              )}
+            </div>
           </div>
-
         )}
-
       </AsyncState>
 
+      {/* Pantalla completa: QR grande sobre blanco, fácil de escanear */}
+      {pantallaCompleta && codigo && (
+        <div className="fixed inset-0 z-50 bg-white flex flex-col items-center justify-center p-6">
+          <button
+            type="button"
+            onClick={() => setPantallaCompleta(false)}
+            aria-label="Cerrar"
+            className="absolute top-4 right-4 w-12 h-12 rounded-full bg-black/5 text-black grid place-items-center"
+          >
+            <X size={22} />
+          </button>
+          <QRCodeCanvas
+            value={codigo}
+            size={Math.min(typeof window !== "undefined" ? window.innerWidth - 64 : 300, 420)}
+            level="M"
+            bgColor="#ffffff"
+            fgColor="#000000"
+          />
+          <p className="text-black text-lg font-semibold mt-6">
+            {perfil.data?.nombre} {perfil.data?.apellido}
+          </p>
+          <p className="text-black/60 text-xs font-mono mt-1 break-all text-center max-w-xs">{codigo}</p>
+        </div>
+      )}
     </div>
   );
 }
