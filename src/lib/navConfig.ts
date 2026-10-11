@@ -56,6 +56,7 @@ export const NAV_POR_ROL: Record<UserRole, NavItem[]> = {
   cliente: [
     { label: "Mi Perfil", path: "/cliente/mi-perfil", icon: UserSquare2 },
     { label: "Mi QR", path: "/cliente/mi-qr", icon: QrCode },
+    { label: "Mis Rutinas", path: "/cliente/rutinas", icon: Dumbbell },
     { label: "Mi Membresía", path: "/cliente/mi-membresia", icon: Wallet },
   ],
 };

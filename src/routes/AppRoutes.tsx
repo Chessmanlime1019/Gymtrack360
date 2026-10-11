@@ -27,6 +27,7 @@ import MiQr from "@/pages/cliente/MiQr";
 import MiMembresia from "@/pages/cliente/MiMembresia";
 import ForgotPassword from "@/pages/auth/ForgotPassword";
 import ResetPassword from "@/pages/auth/ResetPassword";
+import MisRutinas from "@/pages/cliente/MisRutinas";
 
 export function AppRoutes() {
   return (
@@ -91,6 +92,7 @@ export function AppRoutes() {
           <Route path="/cliente/mi-perfil" element={<MiPerfil />} />
           <Route path="/cliente/mi-qr" element={<MiQr />} />
           <Route path="/cliente/mi-membresia" element={<MiMembresia />} />
+          <Route path="/cliente/rutinas" element={<MisRutinas />} />
         </Route>
       </Route>
 
