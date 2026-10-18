@@ -26,9 +26,11 @@ const Caja = lazy(() => import("@/pages/recepcion/Caja"));
 const ControlAcceso = lazy(() => import("@/pages/recepcion/ControlAcceso"));
 const BuscarCliente = lazy(() => import("@/pages/recepcion/BuscarCliente"));
 const RegistrarPago = lazy(() => import("@/pages/recepcion/RegistrarPago"));
+const PagosPorConfirmar = lazy(() => import("@/pages/recepcion/PagosPorConfirmar"));
 
 const ProfesionalDashboard = lazy(() => import("@/pages/profesional/Dashboard"));
 const MisClientes = lazy(() => import("@/pages/profesional/MisClientes"));
+const Seguimiento = lazy(() => import("@/pages/profesional/Seguimiento"));
 const Rutinas = lazy(() => import("@/pages/profesional/Rutinas"));
 
 const MiPerfil = lazy(() => import("@/pages/cliente/MiPerfil"));
@@ -112,6 +114,7 @@ export function AppRoutes() {
             <Route path="/recepcion/control-acceso" element={<ControlAcceso />} />
             <Route path="/recepcion/buscar-cliente" element={<BuscarCliente />} />
             <Route path="/recepcion/registrar-pago" element={<RegistrarPago />} />
+            <Route path="/recepcion/pagos-por-confirmar" element={<PagosPorConfirmar />} />
             <Route path="/recepcion/asistencias" element={<Asistencias />} />
             <Route path="/recepcion/caja" element={<Caja />} />
             <Route path="/recepcion/avisos" element={<AvisosGestion />} />
@@ -122,6 +125,7 @@ export function AppRoutes() {
           <Route element={<AppShell />}>
             <Route path="/profesional/dashboard" element={<ProfesionalDashboard />} />
             <Route path="/profesional/mis-clientes" element={<MisClientes />} />
+            <Route path="/profesional/seguimiento" element={<Seguimiento />} />
             <Route path="/profesional/rutinas" element={<Rutinas />} />
             <Route path="/profesional/avisos" element={<AvisosLectura />} />
           </Route>

@@ -1,8 +1,21 @@
 ﻿import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { AlertTriangle, Bell, BellOff, BellRing, CheckCheck, CheckCircle2, Info, X, XCircle } from "lucide-react";
+import {
+  AlertTriangle,
+  Bell,
+  BellOff,
+  BellRing,
+  CheckCheck,
+  CheckCircle2,
+  Info,
+  Volume2,
+  VolumeX,
+  X,
+  XCircle,
+} from "lucide-react";
 
 import { useNotificaciones, type Notificacion, type TipoNotificacion } from "@/hooks/useNotificaciones";
+import { guardarSonidoActivado, reproducirSonido, sonidoActivado } from "@/lib/sonidoNotificacion";
 
 const ESTILO: Record<TipoNotificacion, { icono: typeof Info; clase: string }> = {
   info: { icono: Info, clase: "bg-info/10 text-info" },
@@ -28,6 +41,7 @@ export function NotificationsMenu() {
   const [permiso, setPermiso] = useState<NotificationPermission | "no-soportado">(() =>
     typeof Notification === "undefined" ? "no-soportado" : Notification.permission
   );
+  const [sonido, setSonido] = useState(sonidoActivado);
   const contenedor = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
   const { notificaciones, noLeidas, cargando, error, marcarLeida, marcarTodas, refrescar, nueva, descartarNueva } =
@@ -67,6 +81,13 @@ export function NotificationsMenu() {
     } catch {
       /* el navegador no permite pedirlo */
     }
+  }
+
+  function alternarSonido() {
+    const activo = !sonido;
+    setSonido(activo);
+    guardarSonidoActivado(activo);
+    if (activo) reproducirSonido("info", true); // prueba para que se escuche cómo suena
   }
 
   const NuevaIcono = nueva ? ESTILO[nueva.tipo].icono : Info;
@@ -124,7 +145,18 @@ export function NotificationsMenu() {
           className="fixed inset-x-3 top-[66px] md:absolute md:inset-x-auto md:right-0 md:top-[52px] md:w-[380px] z-50 bg-surface border border-line-strong rounded-2xl shadow-2xl overflow-hidden"
         >
           <div className="flex items-center justify-between px-4 py-3 border-b border-line">
-            <p className="text-ink font-semibold">Notificaciones</p>
+            <div className="flex items-center gap-1">
+              <p className="text-ink font-semibold">Notificaciones</p>
+              <button
+                type="button"
+                onClick={alternarSonido}
+                aria-label={sonido ? "Silenciar sonido de notificaciones" : "Activar sonido de notificaciones"}
+                title={sonido ? "Sonido activado" : "Sonido silenciado"}
+                className={`w-9 h-9 rounded-lg grid place-items-center hover:bg-bar ${sonido ? "text-primary" : "text-muted"}`}
+              >
+                {sonido ? <Volume2 size={16} /> : <VolumeX size={16} />}
+              </button>
+            </div>
             <button
               type="button"
               onClick={marcarTodas}

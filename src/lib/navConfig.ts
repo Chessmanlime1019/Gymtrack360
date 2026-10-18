@@ -1,5 +1,7 @@
 import type { UserRole } from "@/types";
 import {
+  BadgeCheck,
+  BellRing,
   LayoutDashboard,
   Users,
   UserCog,
@@ -46,6 +48,7 @@ export const NAV_POR_ROL: Record<UserRole, NavItem[]> = {
     // (src/pages/admin/Usuarios.tsx), que ya distingue el rol por dentro.
     { label: "Usuarios", path: "/admin/usuarios", icon: UserCog },
     { label: "Membresías", path: "/admin/membresias", icon: CreditCard },
+    { label: "Pagos por confirmar", path: "/recepcion/pagos-por-confirmar", icon: BadgeCheck },
     { label: "Planes", path: "/admin/planes", icon: Tags },
     { label: "Avisos", path: "/admin/avisos", icon: Megaphone },
     { label: "Reportes", path: "/admin/reportes", icon: BarChart3 },
@@ -57,6 +60,7 @@ export const NAV_POR_ROL: Record<UserRole, NavItem[]> = {
     { label: "Membresías", path: "/recepcion/membresias", icon: CreditCard },
     { label: "Buscar Cliente", path: "/recepcion/buscar-cliente", icon: Search },
     { label: "Registrar Pago", path: "/recepcion/registrar-pago", icon: Wallet },
+    { label: "Pagos por confirmar", path: "/recepcion/pagos-por-confirmar", icon: BadgeCheck },
     { label: "Asistencias", path: "/recepcion/asistencias", icon: CalendarCheck },
     { label: "Caja del Día", path: "/recepcion/caja", icon: Landmark },
     { label: "Avisos", path: "/recepcion/avisos", icon: Megaphone },
@@ -64,6 +68,7 @@ export const NAV_POR_ROL: Record<UserRole, NavItem[]> = {
   profesional: [
     { label: "Dashboard", path: "/profesional/dashboard", icon: LayoutDashboard },
     { label: "Mis Clientes", path: "/profesional/mis-clientes", icon: Users },
+    { label: "Seguimiento", path: "/profesional/seguimiento", icon: BellRing },
     { label: "Rutinas", path: "/profesional/rutinas", icon: Dumbbell },
     { label: "Avisos", path: "/profesional/avisos", icon: Megaphone },
   ],

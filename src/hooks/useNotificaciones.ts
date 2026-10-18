@@ -3,6 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/lib/supabaseClient";
+import { prepararSonido, reproducirSonido } from "@/lib/sonidoNotificacion";
 import { obtenerMiPerfil } from "@/services/perfilService";
 import { obtenerMembresiaVigenteCliente } from "@/services/membresiasService";
 import { obtenerRutinas } from "@/services/rutinasService";
@@ -253,6 +254,11 @@ export function useNotificaciones() {
 
   useEffect(() => {
     if (!userId) return;
+    return prepararSonido();
+  }, [userId]);
+
+  useEffect(() => {
+    if (!userId) return;
 
     const canal = supabase
       .channel(`notificaciones-${userId}`)
@@ -273,6 +279,7 @@ export function useNotificaciones() {
           };
           queryClient.invalidateQueries({ queryKey: ["notificaciones-eventos", userId] });
           setNueva(n);
+          reproducirSonido(n.tipo);
 
           // Si la app está en segundo plano y el usuario dio permiso, aviso del sistema.
           try {
