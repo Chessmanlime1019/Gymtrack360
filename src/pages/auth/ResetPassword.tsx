@@ -7,6 +7,7 @@ import { useNavigate } from "react-router-dom";
 
 import { supabase } from "@/lib/supabaseClient";
 import { useAuth } from "@/hooks/useAuth";
+import { PasswordInput } from "@/components/ui/PasswordInput";
 
 import {
   resetPasswordSchema,
@@ -367,9 +368,8 @@ export default function ResetPassword() {
                   </svg>
                 </div>
 
-                <input
+                <PasswordInput
                   id="password"
-                  type="password"
                   autoComplete="new-password"
                   {...register("password")}
                   className="
@@ -434,9 +434,8 @@ export default function ResetPassword() {
                   </svg>
                 </div>
 
-                <input
+                <PasswordInput
                   id="confirmarPassword"
-                  type="password"
                   autoComplete="new-password"
                   {...register("confirmarPassword")}
                   className="

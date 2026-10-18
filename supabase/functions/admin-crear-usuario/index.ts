@@ -1,11 +1,12 @@
 // supabase/functions/admin-crear-usuario/index.ts
 //
-// Crea un usuario (Auth + fila en profiles) desde el panel de administración.
+// Crea un usuario (Auth + fila en profiles) desde el panel de administración
+// o desde Recepción (Recepción SOLO puede crear clientes de su propia sede).
 // Se ejecuta en el servidor porque necesita la service_role key: esa clave
 // NUNCA debe usarse desde el navegador.
 //
 // Seguridad: antes de crear nada, valida con el token de quien llama que
-// esa persona ya es super_admin o admin_sede en la tabla profiles. Si no,
+// esa persona ya es super_admin, admin_sede o recepcionista en profiles. Si no,
 // devuelve 403. Así nadie puede llamar a esta función a mano (por ejemplo
 // desde la consola del navegador) y crear cuentas con permisos que no le
 // corresponden.
@@ -78,7 +79,7 @@ Deno.serve(async (req) => {
       return json({ error: "No se pudo verificar tu rol." }, 403);
     }
 
-    if (!["super_admin", "admin_sede"].includes(perfilLlamador.role)) {
+    if (!["super_admin", "admin_sede", "recepcionista"].includes(perfilLlamador.role)) {
       return json({ error: "No tienes permiso para crear usuarios." }, 403);
     }
 
@@ -105,11 +106,21 @@ Deno.serve(async (req) => {
     // sede. Esto se exige aquí, no solo en la pantalla, porque la pantalla
     // se puede saltar llamando a esta función directamente.
     if (perfilLlamador.role === "admin_sede") {
-      if (!["recepcionista", "profesional"].includes(body.role)) {
+      if (!["recepcionista", "profesional", "cliente"].includes(body.role)) {
         return json({ error: "No tienes permiso para asignar ese rol." }, 403);
       }
       if (body.sedeId !== perfilLlamador.sede_id) {
         return json({ error: "Solo puedes crear usuarios para tu propia sede." }, 403);
+      }
+    }
+
+    // Recepción: únicamente clientes, y solo de su propia sede.
+    if (perfilLlamador.role === "recepcionista") {
+      if (body.role !== "cliente") {
+        return json({ error: "Recepción solo puede registrar clientes." }, 403);
+      }
+      if (body.sedeId !== perfilLlamador.sede_id) {
+        return json({ error: "Solo puedes registrar clientes de tu propia sede." }, 403);
       }
     }
 

@@ -40,7 +40,7 @@ export default defineConfig({
                 runtimeCaching: [],
                 cleanupOutdatedCaches: true,
                 // El archivo principal pesa ~1.9 MB; este límite evita que el plugin lo ignore.
-                maximumFileSizeToCacheInBytes: 4 * 1024 * 1024,
+                maximumFileSizeToCacheInBytes: 2 * 1024 * 1024,
             },
         }),
     ],

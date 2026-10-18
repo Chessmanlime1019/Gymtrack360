@@ -5,7 +5,7 @@ import type { UserRole } from "@/types";
 const RUTA_INICIAL_POR_ROL: Record<UserRole, string> = {
   super_admin: "/admin/dashboard",
   admin_sede: "/admin/dashboard",
-  recepcionista: "/recepcion/control-acceso",
+  recepcionista: "/recepcion/dashboard",
   profesional: "/profesional/dashboard",
   cliente: "/cliente/mi-perfil",
 };

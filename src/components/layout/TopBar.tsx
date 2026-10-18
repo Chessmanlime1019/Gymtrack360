@@ -20,14 +20,17 @@ export function TopBar() {
         border-line
         bg-bar/95
         backdrop-blur-xl
-        px-3
-        sm:px-6
-        py-3
+        pl-[max(0.75rem,env(safe-area-inset-left))]
+        pr-[max(0.75rem,env(safe-area-inset-right))]
+        sm:pl-6
+        sm:pr-6
+        pt-[calc(0.75rem+env(safe-area-inset-top))]
+        pb-3
       "
     >
       <GlobalSearch />
 
-      <div className="flex items-center gap-1 sm:gap-2 ml-auto">
+      <div className="flex items-center gap-1 sm:gap-2 ml-auto shrink-0">
         <QuickAccessMenu />
 
         <NotificationsMenu />

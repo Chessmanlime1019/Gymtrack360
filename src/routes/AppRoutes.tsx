@@ -1,104 +1,137 @@
+import { lazy, Suspense } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 import { ProtectedRoute } from "./ProtectedRoute";
 import { RoleRedirect } from "./RoleRedirect";
 import { AppShell } from "@/components/layout/AppShell";
 
-import Login from "@/pages/auth/Login";
-import Register from "@/pages/auth/Register";
+// Cada pantalla se descarga solo cuando se visita (carga inicial mucho más liviana).
+const Login = lazy(() => import("@/pages/auth/Login"));
+const Register = lazy(() => import("@/pages/auth/Register"));
+const ForgotPassword = lazy(() => import("@/pages/auth/ForgotPassword"));
+const ResetPassword = lazy(() => import("@/pages/auth/ResetPassword"));
 
-import AdminDashboard from "@/pages/admin/Dashboard";
-import AdminClientes from "@/pages/admin/Clientes";
-import AdminMembresias from "@/pages/admin/Membresias";
-import AdminReportes from "@/pages/admin/Reportes";
-import AdminPlanes from "@/pages/admin/Planes";
-import AdminSedes from "@/pages/admin/Sedes";
-import AdminUsuarios from "@/pages/admin/Usuarios";
+const AdminDashboard = lazy(() => import("@/pages/admin/Dashboard"));
+const AdminClientes = lazy(() => import("@/pages/admin/Clientes"));
+const AdminMembresias = lazy(() => import("@/pages/admin/Membresias"));
+const AdminReportes = lazy(() => import("@/pages/admin/Reportes"));
+const AdminPlanes = lazy(() => import("@/pages/admin/Planes"));
+const AdminSedes = lazy(() => import("@/pages/admin/Sedes"));
+const AdminUsuarios = lazy(() => import("@/pages/admin/Usuarios"));
 
-import ControlAcceso from "@/pages/recepcion/ControlAcceso";
-import BuscarCliente from "@/pages/recepcion/BuscarCliente";
-import RegistrarPago from "@/pages/recepcion/RegistrarPago";
+const RecepcionDashboard = lazy(() => import("@/pages/recepcion/Dashboard"));
+const RegistrarCliente = lazy(() => import("@/pages/recepcion/RegistrarCliente"));
+const RecepcionMembresias = lazy(() => import("@/pages/recepcion/Membresias"));
+const Asistencias = lazy(() => import("@/pages/recepcion/Asistencias"));
+const Caja = lazy(() => import("@/pages/recepcion/Caja"));
+const ControlAcceso = lazy(() => import("@/pages/recepcion/ControlAcceso"));
+const BuscarCliente = lazy(() => import("@/pages/recepcion/BuscarCliente"));
+const RegistrarPago = lazy(() => import("@/pages/recepcion/RegistrarPago"));
 
-import ProfesionalDashboard from "@/pages/profesional/Dashboard";
-import MisClientes from "@/pages/profesional/MisClientes";
-import Rutinas from "@/pages/profesional/Rutinas";
+const ProfesionalDashboard = lazy(() => import("@/pages/profesional/Dashboard"));
+const MisClientes = lazy(() => import("@/pages/profesional/MisClientes"));
+const Rutinas = lazy(() => import("@/pages/profesional/Rutinas"));
 
-import MiPerfil from "@/pages/cliente/MiPerfil";
-import MiQr from "@/pages/cliente/MiQr";
-import MiMembresia from "@/pages/cliente/MiMembresia";
-import ForgotPassword from "@/pages/auth/ForgotPassword";
-import ResetPassword from "@/pages/auth/ResetPassword";
-import MisRutinas from "@/pages/cliente/MisRutinas";
-import Pagar from "@/pages/cliente/Pagar";
+const MiPerfil = lazy(() => import("@/pages/cliente/MiPerfil"));
+const MiQr = lazy(() => import("@/pages/cliente/MiQr"));
+const MiMembresia = lazy(() => import("@/pages/cliente/MiMembresia"));
+const MisRutinas = lazy(() => import("@/pages/cliente/MisRutinas"));
+const Pagar = lazy(() => import("@/pages/cliente/Pagar"));
+
+function Cargando() {
+  return (
+    <div className="min-h-screen grid place-items-center bg-background">
+      <div className="w-10 h-10 rounded-full border-2 border-primary/20 border-t-primary animate-spin" />
+    </div>
+  );
+}
+
+function NoAutorizado() {
+  return (
+    <div className="min-h-screen grid place-items-center bg-background px-6 text-center">
+      <div>
+        <h1 className="text-2xl text-ink">Sin acceso</h1>
+        <p className="text-muted text-sm mt-2">No tienes acceso a esta sección.</p>
+        <a
+          href="/"
+          className="inline-block mt-5 px-5 h-11 leading-[44px] rounded-xl bg-primary text-white text-sm font-semibold hover:bg-primary-dark"
+        >
+          Volver al inicio
+        </a>
+      </div>
+    </div>
+  );
+}
 
 export function AppRoutes() {
   return (
-    <Routes>
-      <Route path="/login" element={<Login />} />
-      <Route path="/register" element={<Register />} />
-      <Route path="/forgot-password" element={<ForgotPassword />} />
-      <Route path="/reset-password" element={<ResetPassword />} />
-      <Route
-        path="/no-autorizado"
-        element={<div className="p-8">No tienes acceso a esta sección.</div>}
-      />
+    <Suspense fallback={<Cargando />}>
+      <Routes>
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
+        <Route path="/no-autorizado" element={<NoAutorizado />} />
 
-      <Route element={<ProtectedRoute />}>
-        <Route path="/" element={<RoleRedirect />} />
-      </Route>
-
-      {/* Usuarios se movió aquí: Admin de Sede ya puede entrar (gestiona
-          el staff de su propia sede). Usuarios.tsx distingue el rol por
-          dentro y le oculta la columna de sedes y las sedes/roles que no
-          le corresponden. */}
-      <Route element={<ProtectedRoute rolesPermitidos={["super_admin", "admin_sede"]} />}>
-        <Route element={<AppShell />}>
-          <Route path="/admin/dashboard" element={<AdminDashboard />} />
-          <Route path="/admin/clientes" element={<AdminClientes />} />
-          <Route path="/admin/usuarios" element={<AdminUsuarios />} />
-          <Route path="/admin/membresias" element={<AdminMembresias />} />
-          <Route path="/admin/planes" element={<AdminPlanes />} />
-          <Route path="/admin/reportes" element={<AdminReportes />} />
+        <Route element={<ProtectedRoute />}>
+          <Route path="/" element={<RoleRedirect />} />
         </Route>
-      </Route>
 
-      {/* Sedes sigue siendo exclusivo de Super Admin. */}
-      <Route element={<ProtectedRoute rolesPermitidos={["super_admin"]} />}>
-        <Route element={<AppShell />}>
-          <Route path="/admin/sedes" element={<AdminSedes />} />
+        {/* Admin de Sede gestiona el staff de su sede; Usuarios.tsx distingue el rol por dentro. */}
+        <Route element={<ProtectedRoute rolesPermitidos={["super_admin", "admin_sede"]} />}>
+          <Route element={<AppShell />}>
+            <Route path="/admin/dashboard" element={<AdminDashboard />} />
+            <Route path="/admin/clientes" element={<AdminClientes />} />
+            <Route path="/admin/usuarios" element={<AdminUsuarios />} />
+            <Route path="/admin/membresias" element={<AdminMembresias />} />
+            <Route path="/admin/planes" element={<AdminPlanes />} />
+            <Route path="/admin/reportes" element={<AdminReportes />} />
+          </Route>
         </Route>
-      </Route>
 
-      <Route
-        element={
-          <ProtectedRoute rolesPermitidos={["recepcionista", "admin_sede", "super_admin"]} />
-        }
-      >
-        <Route element={<AppShell />}>
-          <Route path="/recepcion/control-acceso" element={<ControlAcceso />} />
-          <Route path="/recepcion/buscar-cliente" element={<BuscarCliente />} />
-          <Route path="/recepcion/registrar-pago" element={<RegistrarPago />} />
+        {/* Sedes: exclusivo de Super Admin. */}
+        <Route element={<ProtectedRoute rolesPermitidos={["super_admin"]} />}>
+          <Route element={<AppShell />}>
+            <Route path="/admin/sedes" element={<AdminSedes />} />
+          </Route>
         </Route>
-      </Route>
 
-      <Route element={<ProtectedRoute rolesPermitidos={["profesional"]} />}>
-        <Route element={<AppShell />}>
-          <Route path="/profesional/dashboard" element={<ProfesionalDashboard />} />
-          <Route path="/profesional/mis-clientes" element={<MisClientes />} />
-          <Route path="/profesional/rutinas" element={<Rutinas />} />
+        <Route
+          element={
+            <ProtectedRoute rolesPermitidos={["recepcionista", "admin_sede", "super_admin"]} />
+          }
+        >
+          <Route element={<AppShell />}>
+            <Route path="/recepcion/dashboard" element={<RecepcionDashboard />} />
+            <Route path="/recepcion/registrar-cliente" element={<RegistrarCliente />} />
+            <Route path="/recepcion/membresias" element={<RecepcionMembresias />} />
+            <Route path="/recepcion/control-acceso" element={<ControlAcceso />} />
+            <Route path="/recepcion/buscar-cliente" element={<BuscarCliente />} />
+            <Route path="/recepcion/registrar-pago" element={<RegistrarPago />} />
+            <Route path="/recepcion/asistencias" element={<Asistencias />} />
+            <Route path="/recepcion/caja" element={<Caja />} />
+          </Route>
         </Route>
-      </Route>
 
-      <Route element={<ProtectedRoute rolesPermitidos={["cliente"]} />}>
-        <Route element={<AppShell />}>
-          <Route path="/cliente/mi-perfil" element={<MiPerfil />} />
-          <Route path="/cliente/mi-qr" element={<MiQr />} />
-          <Route path="/cliente/mi-membresia" element={<MiMembresia />} />
-          <Route path="/cliente/pagar" element={<Pagar />} />
-          <Route path="/cliente/rutinas" element={<MisRutinas />} />
+        <Route element={<ProtectedRoute rolesPermitidos={["profesional"]} />}>
+          <Route element={<AppShell />}>
+            <Route path="/profesional/dashboard" element={<ProfesionalDashboard />} />
+            <Route path="/profesional/mis-clientes" element={<MisClientes />} />
+            <Route path="/profesional/rutinas" element={<Rutinas />} />
+          </Route>
         </Route>
-      </Route>
 
-      <Route path="*" element={<Navigate to="/login" replace />} />
-    </Routes>
+        <Route element={<ProtectedRoute rolesPermitidos={["cliente"]} />}>
+          <Route element={<AppShell />}>
+            <Route path="/cliente/mi-perfil" element={<MiPerfil />} />
+            <Route path="/cliente/mi-qr" element={<MiQr />} />
+            <Route path="/cliente/mi-membresia" element={<MiMembresia />} />
+            <Route path="/cliente/pagar" element={<Pagar />} />
+            <Route path="/cliente/rutinas" element={<MisRutinas />} />
+          </Route>
+        </Route>
+
+        <Route path="*" element={<Navigate to="/login" replace />} />
+      </Routes>
+    </Suspense>
   );
 }

@@ -1,0 +1,92 @@
+-- 0021: Recepción (y admins) pueden vender o renovar un plan a un cliente de su sede.
+-- Todo ocurre en UNA función del servidor: crea la membresía y registra el pago
+-- juntos (si algo falla, no queda nada a medias) y calcula fechas y monto,
+-- así nadie puede ponerse un precio o fechas a su gusto.
+
+create or replace function public.staff_vender_plan(
+  p_cliente_id uuid,
+  p_plan_id uuid,
+  p_metodo text
+)
+returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare
+  v_user uuid := auth.uid();
+  v_rol text;
+  v_sede_staff uuid;
+  v_cli record;
+  v_plan record;
+  v_hoy date := (now() at time zone 'America/Lima')::date;
+  v_ult date;
+  v_inicio date;
+  v_fin date;
+  v_memb_id uuid;
+  v_pago_id uuid;
+  v_fecha timestamptz;
+begin
+  if v_user is null then
+    raise exception 'Sin sesión activa';
+  end if;
+
+  select role::text, sede_id into v_rol, v_sede_staff
+  from public.profiles where id = v_user;
+
+  if v_rol is null or v_rol not in ('recepcionista', 'admin_sede', 'super_admin') then
+    raise exception 'No tienes permiso para vender planes';
+  end if;
+
+  if p_metodo not in ('Efectivo', 'Yape', 'Plin', 'Transferencia') then
+    raise exception 'Método de pago no permitido';
+  end if;
+
+  select id, sede_id, role::text as rol into v_cli
+  from public.profiles where id = p_cliente_id;
+
+  if not found or v_cli.rol <> 'cliente' then
+    raise exception 'Cliente no encontrado';
+  end if;
+  if v_cli.sede_id is null then
+    raise exception 'El cliente no tiene una sede asignada';
+  end if;
+  if v_rol <> 'super_admin' and v_cli.sede_id is distinct from v_sede_staff then
+    raise exception 'Ese cliente pertenece a otra sede';
+  end if;
+
+  select id, precio, duracion_dias into v_plan
+  from public.planes
+  where id = p_plan_id and activo = true
+    and (sede_id is null or sede_id = v_cli.sede_id);
+  if not found then
+    raise exception 'Plan no disponible en la sede del cliente';
+  end if;
+
+  -- Si ya tiene un plan vigente, el nuevo empieza cuando termine ese
+  -- (no pierde días ya pagados).
+  select max(fecha_fin) into v_ult
+  from public.membresias
+  where cliente_id = p_cliente_id and estado = 'activa' and fecha_fin >= v_hoy;
+
+  v_inicio := greatest(v_hoy, coalesce(v_ult, v_hoy));
+  v_fin := v_inicio + v_plan.duracion_dias;
+
+  insert into public.membresias (cliente_id, plan_id, sede_origen_id, fecha_inicio, fecha_fin, estado)
+  values (p_cliente_id, p_plan_id, v_cli.sede_id, v_inicio, v_fin, 'activa')
+  returning id into v_memb_id;
+
+  insert into public.pagos (cliente_id, membresia_id, sede_id, monto, metodo_pago)
+  values (p_cliente_id, v_memb_id, v_cli.sede_id, v_plan.precio, p_metodo)
+  returning id, fecha into v_pago_id, v_fecha;
+
+  return jsonb_build_object(
+    'pago_id', v_pago_id,
+    'membresia_id', v_memb_id,
+    'monto', v_plan.precio,
+    'fecha', v_fecha,
+    'fecha_inicio', v_inicio,
+    'fecha_fin', v_fin
+  );
+end;
+$$;
+
+revoke all on function public.staff_vender_plan(uuid, uuid, text) from public;
+grant execute on function public.staff_vender_plan(uuid, uuid, text) to authenticated;

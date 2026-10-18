@@ -13,6 +13,9 @@ import {
   QrCode,
   Wallet,
   Search,
+  UserPlus,
+  CalendarCheck,
+  Landmark,
   type LucideIcon,
 } from "lucide-react";
 
@@ -44,9 +47,14 @@ export const NAV_POR_ROL: Record<UserRole, NavItem[]> = {
     { label: "Reportes", path: "/admin/reportes", icon: BarChart3 },
   ],
   recepcionista: [
+    { label: "Panel", path: "/recepcion/dashboard", icon: LayoutDashboard },
     { label: "Control de Acceso", path: "/recepcion/control-acceso", icon: ScanLine },
+    { label: "Registrar Cliente", path: "/recepcion/registrar-cliente", icon: UserPlus },
+    { label: "Membresías", path: "/recepcion/membresias", icon: CreditCard },
     { label: "Buscar Cliente", path: "/recepcion/buscar-cliente", icon: Search },
     { label: "Registrar Pago", path: "/recepcion/registrar-pago", icon: Wallet },
+    { label: "Asistencias", path: "/recepcion/asistencias", icon: CalendarCheck },
+    { label: "Caja del Día", path: "/recepcion/caja", icon: Landmark },
   ],
   profesional: [
     { label: "Dashboard", path: "/profesional/dashboard", icon: LayoutDashboard },

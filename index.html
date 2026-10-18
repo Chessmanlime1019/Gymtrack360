@@ -3,43 +3,39 @@
   <head>
     <meta charset="UTF-8" />
 
-    <!-- Configuración de pantalla para PC y dispositivos móviles -->
+    <!-- Pantalla completa en móvil, respetando el notch -->
     <meta
       name="viewport"
       content="width=device-width, initial-scale=1, viewport-fit=cover"
     />
 
-    <!-- Información de GYMTRACK 360 -->
+    <!-- GYMTRACK 360 -->
     <title>GYMTRACK 360</title>
     <meta
       name="description"
       content="Gestión y acceso digital para Cascada Gym."
     />
 
-    <!-- Color de la interfaz del navegador -->
+    <!-- Tema oscuro: evita el destello blanco al cargar -->
+    <meta name="color-scheme" content="dark" />
     <meta name="theme-color" content="#0B0F13" />
 
-    <!-- Iconos de la aplicación (el manifest lo agrega solo vite-plugin-pwa) -->
+    <!-- Iconos (el manifest lo agrega solo vite-plugin-pwa) -->
     <link rel="icon" href="/icons/favicon.ico" sizes="any" />
     <link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32.png" />
     <link rel="icon" type="image/png" sizes="16x16" href="/icons/favicon-16.png" />
     <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
 
-    <!-- Configuración para iPhone y otros dispositivos móviles -->
+    <!-- iPhone y otros móviles -->
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-title" content="GYMTRACK" />
-    <meta
-      name="apple-mobile-web-app-status-bar-style"
-      content="black-translucent"
-    />
+    <!-- "black": la barra de estado del iPhone ya no tapa la TopBar -->
+    <meta name="apple-mobile-web-app-status-bar-style" content="black" />
   </head>
 
-  <body class="bg-background text-white">
-    <!-- Contenedor principal de React -->
+  <body class="bg-background text-white" style="background:#060A0E">
     <div id="root"></div>
-
-    <!-- Punto de entrada de la aplicación Vite + React -->
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
