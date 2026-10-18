@@ -1,11 +1,12 @@
 import { useMemo, useState, type ReactNode } from "react";
 import { Link } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Dumbbell, Eye, Search, UserMinus, UserPlus } from "lucide-react";
+import { Dumbbell, Eye, Search, TrendingUp, UserMinus, UserPlus } from "lucide-react";
 
 import { AsyncState } from "@/components/ui/AsyncState";
 import { Modal } from "@/components/ui/Modal";
 import { RutinaPlan } from "@/components/rutinas/RutinaPlan";
+import { ProgresoCliente } from "@/components/progreso/ProgresoCliente";
 import { obtenerMiPerfil } from "@/services/perfilService";
 import { obtenerRutinas } from "@/services/rutinasService";
 import { obtenerMisClientes, tomarACargo, dejarDeAtender, type ClienteSede } from "@/services/misClientesService";
@@ -287,7 +288,7 @@ export default function MisClientes() {
 
           {/* ---------- Panel ---------- */}
           {seleccion && (
-            <aside className="lg:sticky lg:top-6 bg-surface border border-line rounded-2xl overflow-hidden">
+            <aside className="lg:sticky lg:top-6 lg:max-h-[calc(100vh-3rem)] lg:overflow-y-auto bg-surface border border-line rounded-2xl overflow-hidden">
               <div className="bg-primary px-5 py-5 flex items-center gap-3">
                 <div className="w-14 h-14 rounded-full bg-white/20 overflow-hidden grid place-items-center text-white font-bold text-lg shrink-0">
                   {seleccion.avatarUrl ? <img src={seleccion.avatarUrl} alt="" className="w-full h-full object-cover" /> : iniciales(seleccion)}
@@ -335,6 +336,15 @@ export default function MisClientes() {
                         <RutinaPlan rutina={rutinaVer} />
                       </div>
                     )}
+                  </div>
+                )}
+
+                {esMio && (
+                  <div className="pt-4 border-t border-line space-y-3">
+                    <p className="text-ink font-semibold flex items-center gap-2">
+                      <TrendingUp size={16} className="text-primary" /> Progreso
+                    </p>
+                    <ProgresoCliente clienteId={seleccion.id} puedeRegistrar />
                   </div>
                 )}
 

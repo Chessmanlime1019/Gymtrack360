@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { CalendarCheck, ClipboardList, Dumbbell, Plus, UserRound, Users } from "lucide-react";
 
 import { AsyncState } from "@/components/ui/AsyncState";
+import { AvisosBanner } from "@/components/avisos/AvisosBanner";
 import { obtenerMiPerfil } from "@/services/perfilService";
 import {
   obtenerResumenProfesional,
@@ -89,6 +90,7 @@ export default function DashboardProfesional() {
 
   return (
     <div className="space-y-6">
+      <AvisosBanner rutaTodos="/profesional/avisos" />
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 className="text-2xl text-ink">{perfil.data ? `Hola, ${perfil.data.nombre}` : "Dashboard"}</h1>

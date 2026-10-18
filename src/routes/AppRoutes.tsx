@@ -34,6 +34,10 @@ const Rutinas = lazy(() => import("@/pages/profesional/Rutinas"));
 const MiPerfil = lazy(() => import("@/pages/cliente/MiPerfil"));
 const MiQr = lazy(() => import("@/pages/cliente/MiQr"));
 const MiMembresia = lazy(() => import("@/pages/cliente/MiMembresia"));
+const MisVisitas = lazy(() => import("@/pages/cliente/MisVisitas"));
+const MiProgreso = lazy(() => import("@/pages/cliente/MiProgreso"));
+const AvisosGestion = lazy(() => import("@/pages/admin/Avisos"));
+const AvisosLectura = lazy(() => import("@/pages/cliente/Avisos"));
 const MisRutinas = lazy(() => import("@/pages/cliente/MisRutinas"));
 const Pagar = lazy(() => import("@/pages/cliente/Pagar"));
 
@@ -84,6 +88,7 @@ export function AppRoutes() {
             <Route path="/admin/usuarios" element={<AdminUsuarios />} />
             <Route path="/admin/membresias" element={<AdminMembresias />} />
             <Route path="/admin/planes" element={<AdminPlanes />} />
+            <Route path="/admin/avisos" element={<AvisosGestion />} />
             <Route path="/admin/reportes" element={<AdminReportes />} />
           </Route>
         </Route>
@@ -109,6 +114,7 @@ export function AppRoutes() {
             <Route path="/recepcion/registrar-pago" element={<RegistrarPago />} />
             <Route path="/recepcion/asistencias" element={<Asistencias />} />
             <Route path="/recepcion/caja" element={<Caja />} />
+            <Route path="/recepcion/avisos" element={<AvisosGestion />} />
           </Route>
         </Route>
 
@@ -117,6 +123,7 @@ export function AppRoutes() {
             <Route path="/profesional/dashboard" element={<ProfesionalDashboard />} />
             <Route path="/profesional/mis-clientes" element={<MisClientes />} />
             <Route path="/profesional/rutinas" element={<Rutinas />} />
+            <Route path="/profesional/avisos" element={<AvisosLectura />} />
           </Route>
         </Route>
 
@@ -124,6 +131,9 @@ export function AppRoutes() {
           <Route element={<AppShell />}>
             <Route path="/cliente/mi-perfil" element={<MiPerfil />} />
             <Route path="/cliente/mi-qr" element={<MiQr />} />
+            <Route path="/cliente/visitas" element={<MisVisitas />} />
+            <Route path="/cliente/progreso" element={<MiProgreso />} />
+            <Route path="/cliente/avisos" element={<AvisosLectura />} />
             <Route path="/cliente/mi-membresia" element={<MiMembresia />} />
             <Route path="/cliente/pagar" element={<Pagar />} />
             <Route path="/cliente/rutinas" element={<MisRutinas />} />

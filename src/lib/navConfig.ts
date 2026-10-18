@@ -15,6 +15,8 @@ import {
   Search,
   UserPlus,
   CalendarCheck,
+  TrendingUp,
+  Megaphone,
   Landmark,
   type LucideIcon,
 } from "lucide-react";
@@ -33,6 +35,7 @@ export const NAV_POR_ROL: Record<UserRole, NavItem[]> = {
     { label: "Membresías", path: "/admin/membresias", icon: CreditCard },
     { label: "Planes", path: "/admin/planes", icon: Tags },
     { label: "Sedes", path: "/admin/sedes", icon: Building2 },
+    { label: "Avisos", path: "/admin/avisos", icon: Megaphone },
     { label: "Reportes", path: "/admin/reportes", icon: BarChart3 },
   ],
   admin_sede: [
@@ -44,6 +47,7 @@ export const NAV_POR_ROL: Record<UserRole, NavItem[]> = {
     { label: "Usuarios", path: "/admin/usuarios", icon: UserCog },
     { label: "Membresías", path: "/admin/membresias", icon: CreditCard },
     { label: "Planes", path: "/admin/planes", icon: Tags },
+    { label: "Avisos", path: "/admin/avisos", icon: Megaphone },
     { label: "Reportes", path: "/admin/reportes", icon: BarChart3 },
   ],
   recepcionista: [
@@ -55,15 +59,20 @@ export const NAV_POR_ROL: Record<UserRole, NavItem[]> = {
     { label: "Registrar Pago", path: "/recepcion/registrar-pago", icon: Wallet },
     { label: "Asistencias", path: "/recepcion/asistencias", icon: CalendarCheck },
     { label: "Caja del Día", path: "/recepcion/caja", icon: Landmark },
+    { label: "Avisos", path: "/recepcion/avisos", icon: Megaphone },
   ],
   profesional: [
     { label: "Dashboard", path: "/profesional/dashboard", icon: LayoutDashboard },
     { label: "Mis Clientes", path: "/profesional/mis-clientes", icon: Users },
     { label: "Rutinas", path: "/profesional/rutinas", icon: Dumbbell },
+    { label: "Avisos", path: "/profesional/avisos", icon: Megaphone },
   ],
   cliente: [
     { label: "Mi Perfil", path: "/cliente/mi-perfil", icon: UserSquare2 },
     { label: "Mi QR", path: "/cliente/mi-qr", icon: QrCode },
+    { label: "Mis Visitas", path: "/cliente/visitas", icon: CalendarCheck },
+    { label: "Mi Progreso", path: "/cliente/progreso", icon: TrendingUp },
+    { label: "Avisos", path: "/cliente/avisos", icon: Megaphone },
     { label: "Mis Rutinas", path: "/cliente/rutinas", icon: Dumbbell },
     { label: "Pagar", path: "/cliente/pagar", icon: Wallet },
     { label: "Mi Membresía", path: "/cliente/mi-membresia", icon: Wallet },
