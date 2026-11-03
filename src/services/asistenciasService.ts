@@ -1,4 +1,7 @@
 import { supabase } from "@/lib/supabaseClient";
+import { diaLima, finDiaLima, inicioDiaLima } from "@/lib/fechas";
+
+// En este archivo "desde" y "hasta" son días YYYY-MM-DD en hora de Lima.
 
 export interface AsistenciaRegistro {
   id: string;
@@ -47,14 +50,8 @@ export async function obtenerAsistencias(
   if (sedeId) {
     query = query.eq("sede_id", sedeId);
   }
-  if (desde) {
-    query = query.gte("fecha_hora", desde);
-  }
-  if (hasta) {
-    const hastaDate = new Date(hasta);
-    hastaDate.setHours(23, 59, 59, 999);
-    query = query.lte("fecha_hora", hastaDate.toISOString());
-  }
+  if (desde) query = query.gte("fecha_hora", inicioDiaLima(desde));
+  if (hasta) query = query.lte("fecha_hora", finDiaLima(hasta));
 
   const { data, error } = await query.returns<AsistenciaRegistro[]>();
   if (error) throw error;
@@ -82,14 +79,8 @@ export async function contarAsistencias(
   if (sedeId) {
     query = query.eq("sede_id", sedeId);
   }
-  if (desde) {
-    query = query.gte("fecha_hora", desde);
-  }
-  if (hasta) {
-    const hastaDate = new Date(hasta);
-    hastaDate.setHours(23, 59, 59, 999);
-    query = query.lte("fecha_hora", hastaDate.toISOString());
-  }
+  if (desde) query = query.gte("fecha_hora", inicioDiaLima(desde));
+  if (hasta) query = query.lte("fecha_hora", finDiaLima(hasta));
 
   const { count, error } = await query;
   if (error) throw error;
@@ -108,14 +99,8 @@ export async function asistenciasAgrupadasPorDia(
   if (sedeId) {
     query = query.eq("sede_id", sedeId);
   }
-  if (desde) {
-    query = query.gte("fecha_hora", desde);
-  }
-  if (hasta) {
-    const hastaDate = new Date(hasta);
-    hastaDate.setHours(23, 59, 59, 999);
-    query = query.lte("fecha_hora", hastaDate.toISOString());
-  }
+  if (desde) query = query.gte("fecha_hora", inicioDiaLima(desde));
+  if (hasta) query = query.lte("fecha_hora", finDiaLima(hasta));
 
   const { data, error } = await query.returns<{ fecha_hora: string }[]>();
   if (error) throw error;
@@ -123,7 +108,7 @@ export async function asistenciasAgrupadasPorDia(
 
   const conteo = new Map<string, number>();
   data.forEach((a) => {
-    const dia = a.fecha_hora.slice(0, 10);
+    const dia = diaLima(a.fecha_hora);
     conteo.set(dia, (conteo.get(dia) ?? 0) + 1);
   });
 
@@ -140,14 +125,8 @@ export async function asistenciasPorSede(
     .from("asistencias")
     .select("sede_id");
 
-  if (desde) {
-    query = query.gte("fecha_hora", desde);
-  }
-  if (hasta) {
-    const hastaDate = new Date(hasta);
-    hastaDate.setHours(23, 59, 59, 999);
-    query = query.lte("fecha_hora", hastaDate.toISOString());
-  }
+  if (desde) query = query.gte("fecha_hora", inicioDiaLima(desde));
+  if (hasta) query = query.lte("fecha_hora", finDiaLima(hasta));
 
   const { data, error } = await query.returns<{ sede_id: string }[]>();
   if (error) throw error;

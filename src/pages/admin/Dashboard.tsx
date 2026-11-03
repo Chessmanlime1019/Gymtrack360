@@ -2,6 +2,7 @@ import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import { AsyncState } from "@/components/ui/AsyncState";
+import { hoyLima, primerDiaMesLima } from "@/lib/fechas";
 import { obtenerSedesActivas } from "@/services/sedesService";
 import {
   obtenerDashboardGlobal,
@@ -40,17 +41,6 @@ import {
 } from "recharts";
 
 const COLORES = ["#F15A24", "#3b82f6", "#10b981", "#f59e0b", "#8b5cf6", "#ec4899"];
-
-function primerDiaMes(): string {
-  const hoy = new Date();
-  return new Date(hoy.getFullYear(), hoy.getMonth(), 1)
-    .toISOString()
-    .slice(0, 10);
-}
-
-function hoyISO(): string {
-  return new Date().toISOString().slice(0, 10);
-}
 
 function formatMoney(n: number): string {
   return `S/ ${n.toLocaleString("es-PE", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
@@ -96,8 +86,8 @@ export default function AdminDashboard() {
   const esSuperAdmin = sesion?.role === "super_admin";
 
   const [sedeFiltro, setSedeFiltro] = useState<string>(sesion?.sedeId ?? "");
-  const [desde, setDesde] = useState(primerDiaMes());
-  const [hasta, setHasta] = useState(hoyISO());
+  const [desde, setDesde] = useState(primerDiaMesLima());
+  const [hasta, setHasta] = useState(hoyLima());
 
   const { data: sedes } = useQuery({
     queryKey: ["sedes-activas"],
@@ -129,8 +119,8 @@ export default function AdminDashboard() {
   });
 
   const { data: membresiasPorEstado } = useQuery({
-    queryKey: ["dashboard-membresias-estado"],
-    queryFn: obtenerMembresiasPorEstado,
+    queryKey: ["dashboard-membresias-estado", sedeActivaId],
+    queryFn: () => obtenerMembresiasPorEstado(sedeActivaId),
   });
 
   const { data: ingresosPorSede } = useQuery({

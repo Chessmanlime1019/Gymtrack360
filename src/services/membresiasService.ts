@@ -1,4 +1,5 @@
 import { supabase } from "@/lib/supabaseClient";
+import { hoyLima, sumarDias } from "@/lib/fechas";
 import type { MembresiaEstado } from "@/types";
 
 export interface MembresiaConDetalle {
@@ -107,7 +108,7 @@ export async function obtenerMembresiaVigenteCliente(
     .select("id, plan_id, sede_origen_id, fecha_fin")
     .eq("cliente_id", clienteId)
     .eq("estado", "activa")
-    .gte("fecha_fin", new Date().toISOString().slice(0, 10))
+    .gte("fecha_fin", hoyLima())
     .order("fecha_fin", { ascending: false })
     .limit(1)
     .returns<
@@ -143,16 +144,15 @@ export async function crearMembresia(params: {
   sedeId: string;
   duracionDias: number;
 }) {
-  const fechaInicio = new Date();
-  const fechaFin = new Date(fechaInicio);
-  fechaFin.setDate(fechaFin.getDate() + params.duracionDias);
+  const fechaInicio = hoyLima();
+  const fechaFin = sumarDias(fechaInicio, params.duracionDias);
 
   const { error } = await (supabase.from("membresias") as any).insert({
     cliente_id: params.clienteId,
     plan_id: params.planId,
     sede_origen_id: params.sedeId,
-    fecha_inicio: fechaInicio.toISOString().slice(0, 10),
-    fecha_fin: fechaFin.toISOString().slice(0, 10),
+    fecha_inicio: fechaInicio,
+    fecha_fin: fechaFin,
     estado: "activa",
   });
 
@@ -171,11 +171,10 @@ export async function renovarMembresia(params: {
   // razonable para el alcance del proyecto): si la membresía anterior
   // aún no vence, la renovación extiende desde esa fecha, no desde hoy,
   // así el cliente no "pierde" días ya pagados. Si ya venció, arranca hoy.
-  const hoy = new Date();
-  const finAnterior = new Date(params.fechaFinAnterior);
+  const hoy = hoyLima();
+  const finAnterior = params.fechaFinAnterior.slice(0, 10);
   const fechaInicio = finAnterior > hoy ? finAnterior : hoy;
-  const fechaFin = new Date(fechaInicio);
-  fechaFin.setDate(fechaFin.getDate() + params.duracionDias);
+  const fechaFin = sumarDias(fechaInicio, params.duracionDias);
 
   // Marca la anterior como vencida para que no queden 2 membresías
   // "activa" compitiendo dentro de validar_acceso_qr.
@@ -188,8 +187,8 @@ export async function renovarMembresia(params: {
     cliente_id: params.clienteId,
     plan_id: params.planId,
     sede_origen_id: params.sedeId,
-    fecha_inicio: fechaInicio.toISOString().slice(0, 10),
-    fecha_fin: fechaFin.toISOString().slice(0, 10),
+    fecha_inicio: fechaInicio,
+    fecha_fin: fechaFin,
     estado: "activa",
   });
   if (errInsert) throw errInsert;

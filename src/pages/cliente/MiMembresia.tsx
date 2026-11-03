@@ -8,7 +8,7 @@ import { Modal } from "@/components/ui/Modal";
 import { obtenerMiPerfil, obtenerMiSede } from "@/services/perfilService";
 import { obtenerMisMembresias, obtenerMisPagos, type MiPago } from "@/services/miMembresiaService";
 
-const hoyISO = () => new Date().toISOString().slice(0, 10);
+import { hoyLima as hoyISO } from "@/lib/fechas";
 
 function diasHasta(fechaFin: string): number {
   const hoy = new Date();

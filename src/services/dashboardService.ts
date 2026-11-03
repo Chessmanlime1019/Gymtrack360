@@ -1,5 +1,12 @@
 import { supabase } from "@/lib/supabaseClient";
-import { obtenerKPIs as obtenerKPIsPorSede } from "@/services/obtenerKpisService";
+import { diaLima, finDiaLima, hoyLima, inicioDiaLima, primerDiaMesLima, sumarDias } from "@/lib/fechas";
+
+// Los indicadores se consultan directo sobre las tablas: las políticas RLS ya
+// limitan a cada rol a su sede (super admin ve todas). "desde" y "hasta" son
+// días YYYY-MM-DD en hora de Lima.
+//
+// Una membresía sigue en estado "activa" aunque su fecha de fin ya haya
+// pasado (nada la cambia sola), así que vigente = activa y fecha_fin >= hoy.
 
 export interface DashboardKPIs {
   totalClientes: number;
@@ -33,21 +40,30 @@ export interface IngresosPorSede {
   ingresos: number;
 }
 
-function primerDiaMes(): string {
-  const hoy = new Date();
-  return new Date(hoy.getFullYear(), hoy.getMonth(), 1)
-    .toISOString()
-    .slice(0, 10);
+// Filtra por sede solo si hay una seleccionada.
+function deSede(query: any, columna: string, sedeId: string | null) {
+  return sedeId ? query.eq(columna, sedeId) : query;
 }
 
-function hoyISO(): string {
-  return new Date().toISOString().slice(0, 10);
+function sinError<T extends { error: unknown }>(...respuestas: T[]) {
+  for (const r of respuestas) if (r.error) throw r.error;
 }
 
-function inicioDelDia(): string {
-  const hoy = new Date();
-  hoy.setHours(0, 0, 0, 0);
-  return hoy.toISOString();
+async function contarMembresias(sedeId: string | null) {
+  const hoy = hoyLima();
+  const membresias = () => supabase.from("membresias").select("id", { count: "exact", head: true });
+  const [vigentes, vencidasEstado, vencidasFecha, canceladas] = await Promise.all([
+    deSede(membresias().eq("estado", "activa").gte("fecha_fin", hoy), "sede_origen_id", sedeId),
+    deSede(membresias().eq("estado", "vencida"), "sede_origen_id", sedeId),
+    deSede(membresias().eq("estado", "activa").lt("fecha_fin", hoy), "sede_origen_id", sedeId),
+    deSede(membresias().eq("estado", "cancelada"), "sede_origen_id", sedeId),
+  ]);
+  sinError(vigentes, vencidasEstado, vencidasFecha, canceladas);
+  return {
+    vigentes: vigentes.count ?? 0,
+    vencidas: (vencidasEstado.count ?? 0) + (vencidasFecha.count ?? 0),
+    canceladas: canceladas.count ?? 0,
+  };
 }
 
 export async function obtenerDashboardGlobal(
@@ -55,95 +71,59 @@ export async function obtenerDashboardGlobal(
   desde?: string,
   hasta?: string
 ): Promise<DashboardKPIs> {
-  const desdeFecha = desde ?? primerDiaMes();
-  const hastaFecha = hasta ?? hoyISO();
-  const hastaFinal = new Date(hastaFecha);
-  hastaFinal.setHours(23, 59, 59, 999);
+  const hoy = hoyLima();
+  const d = desde ?? primerDiaMesLima();
+  const h = hasta ?? hoy;
 
-  if (sedeId) {
-    const [tcRes, kpisRes, membRes, memvRes, sedesARes] = await Promise.all([
-      supabase
-        .from("profiles")
-        .select("id", { count: "exact", head: true })
-        .eq("role", "cliente")
-        .eq("sede_id", sedeId),
-      obtenerKPIsPorSede(sedeId),
-      supabase
-        .from("membresias")
-        .select("id", { count: "exact", head: true })
-        .eq("estado", "activa"),
-      supabase
-        .from("membresias")
-        .select("id", { count: "exact", head: true })
-        .eq("estado", "vencida"),
-      supabase
-        .from("sedes")
-        .select("id, activa"),
-    ]);
-
-    const sedesArr = sedesARes.data ?? [];
-    return {
-      totalClientes: tcRes.count ?? 0,
-      clientesActivos: membRes.count ?? 0,
-      checkinsHoy: kpisRes.checkinsHoy,
-      membresiasPorVencer: kpisRes.membresiasPorVencer,
-      ingresosMes: kpisRes.ingresosMes,
-      totalSedes: sedesArr.length,
-      sedesActivas: sedesArr.filter((s) => (s as any).activa).length,
-      membresiasActivas: membRes.count ?? 0,
-      membresiasVencidas: memvRes.count ?? 0,
-    };
-  }
-
-  const [tcRes, checkRes, pvRes, ingRes, membRes, memvRes, sedesARes] =
-    await Promise.all([
-      supabase
-        .from("profiles")
-        .select("id", { count: "exact", head: true })
-        .eq("role", "cliente"),
-      supabase
-        .from("asistencias")
-        .select("id", { count: "exact", head: true })
-        .gte("fecha_hora", inicioDelDia()),
+  const [clientes, clientesVigentes, porVencer, checkins, pagos, sedes, membresias] = await Promise.all([
+    deSede(supabase.from("profiles").select("id", { count: "exact", head: true }).eq("role", "cliente"), "sede_id", sedeId),
+    deSede(
+      supabase.from("membresias").select("cliente_id").eq("estado", "activa").gte("fecha_fin", hoy),
+      "sede_origen_id",
+      sedeId
+    ),
+    deSede(
       supabase
         .from("membresias")
         .select("id", { count: "exact", head: true })
         .eq("estado", "activa")
-        .gte("fecha_fin", hoyISO())
-        .lte("fecha_fin", new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10)),
+        .gte("fecha_fin", hoy)
+        .lte("fecha_fin", sumarDias(hoy, 7)),
+      "sede_origen_id",
+      sedeId
+    ),
+    deSede(
       supabase
-        .from("pagos")
-        .select("monto")
-        .gte("fecha", desdeFecha)
-        .lte("fecha", hastaFinal.toISOString()),
-      supabase
-        .from("membresias")
+        .from("asistencias")
         .select("id", { count: "exact", head: true })
-        .eq("estado", "activa"),
-      supabase
-        .from("membresias")
-        .select("id", { count: "exact", head: true })
-        .eq("estado", "vencida"),
-      supabase
-        .from("sedes")
-        .select("id, activa"),
-    ]);
+        .gte("fecha_hora", inicioDiaLima(hoy))
+        .lte("fecha_hora", finDiaLima(hoy)),
+      "sede_id",
+      sedeId
+    ),
+    deSede(
+      supabase.from("pagos").select("monto").gte("fecha", inicioDiaLima(d)).lte("fecha", finDiaLima(h)),
+      "sede_id",
+      sedeId
+    ),
+    supabase.from("sedes").select("id, activa").returns<{ id: string; activa: boolean }[]>(),
+    contarMembresias(sedeId),
+  ]);
+  sinError(clientes, clientesVigentes, porVencer, checkins, pagos, sedes);
 
-  const sedesArr = sedesARes.data ?? [];
+  const sedesArr = sedes.data ?? [];
+  const idsVigentes = new Set(((clientesVigentes.data ?? []) as { cliente_id: string }[]).map((m) => m.cliente_id));
 
   return {
-    totalClientes: tcRes.count ?? 0,
-    clientesActivos: membRes.count ?? 0,
-    checkinsHoy: checkRes.count ?? 0,
-    membresiasPorVencer: pvRes.count ?? 0,
-    ingresosMes: (ingRes.data ?? []).reduce(
-      (sum, p) => sum + ((p as any).monto ?? 0),
-      0
-    ),
+    totalClientes: clientes.count ?? 0,
+    clientesActivos: idsVigentes.size,
+    checkinsHoy: checkins.count ?? 0,
+    membresiasPorVencer: porVencer.count ?? 0,
+    ingresosMes: ((pagos.data ?? []) as { monto: number }[]).reduce((suma, p) => suma + Number(p.monto ?? 0), 0),
     totalSedes: sedesArr.length,
-    sedesActivas: sedesArr.filter((s) => (s as any).activa).length,
-    membresiasActivas: membRes.count ?? 0,
-    membresiasVencidas: memvRes.count ?? 0,
+    sedesActivas: sedesArr.filter((s) => s.activa).length,
+    membresiasActivas: membresias.vigentes,
+    membresiasVencidas: membresias.vencidas,
   };
 }
 
@@ -152,29 +132,21 @@ export async function obtenerIngresosPorDia(
   desde?: string,
   hasta?: string
 ): Promise<IngresosPorDia[]> {
-  const desdeFecha = desde ?? primerDiaMes();
-  const hastaFecha = hasta ?? hoyISO();
-  const hastaFinal = new Date(hastaFecha);
-  hastaFinal.setHours(23, 59, 59, 999);
+  const d = desde ?? primerDiaMesLima();
+  const h = hasta ?? hoyLima();
 
-  let query = supabase
-    .from("pagos")
-    .select("monto, fecha")
-    .gte("fecha", desdeFecha)
-    .lte("fecha", hastaFinal.toISOString());
-
-  if (sedeId) {
-    query = query.eq("sede_id", sedeId);
-  }
-
-  const { data, error } = await query.returns<{ monto: number; fecha: string }[]>();
+  const { data, error } = await deSede(
+    supabase.from("pagos").select("monto, fecha").gte("fecha", inicioDiaLima(d)).lte("fecha", finDiaLima(h)),
+    "sede_id",
+    sedeId
+  );
   if (error) throw error;
   if (!data || data.length === 0) return [];
 
   const mapa = new Map<string, number>();
-  data.forEach((p) => {
-    const dia = p.fecha.slice(0, 10);
-    mapa.set(dia, (mapa.get(dia) ?? 0) + (p.monto ?? 0));
+  (data as { monto: number; fecha: string }[]).forEach((p) => {
+    const dia = diaLima(p.fecha);
+    mapa.set(dia, (mapa.get(dia) ?? 0) + Number(p.monto ?? 0));
   });
 
   return Array.from(mapa.entries())
@@ -191,7 +163,7 @@ export async function obtenerClientesPorSede(): Promise<ClientesPorSede[]> {
 
   if (!sedes || sedes.length === 0) return [];
 
-  const resultados = await Promise.all(
+  return Promise.all(
     sedes.map(async (s) => {
       const { count } = await supabase
         .from("profiles")
@@ -201,69 +173,37 @@ export async function obtenerClientesPorSede(): Promise<ClientesPorSede[]> {
       return { sede: s.nombre, cantidad: count ?? 0 };
     })
   );
-
-  return resultados;
 }
 
-export async function obtenerMembresiasPorEstado(): Promise<MembresiasPorEstado[]> {
-  const [actRes, vencRes, cancRes] = await Promise.all([
-    supabase
-      .from("membresias")
-      .select("id", { count: "exact", head: true })
-      .eq("estado", "activa"),
-    supabase
-      .from("membresias")
-      .select("id", { count: "exact", head: true })
-      .eq("estado", "vencida"),
-    supabase
-      .from("membresias")
-      .select("id", { count: "exact", head: true })
-      .eq("estado", "cancelada"),
-  ]);
-
-  const resultado = [
-    { estado: "Activas", cantidad: actRes.count ?? 0 },
-    { estado: "Vencidas", cantidad: vencRes.count ?? 0 },
-    { estado: "Canceladas", cantidad: cancRes.count ?? 0 },
+export async function obtenerMembresiasPorEstado(sedeId: string | null): Promise<MembresiasPorEstado[]> {
+  const m = await contarMembresias(sedeId);
+  return [
+    { estado: "Vigentes", cantidad: m.vigentes },
+    { estado: "Vencidas", cantidad: m.vencidas },
+    { estado: "Canceladas", cantidad: m.canceladas },
   ].filter((e) => e.cantidad > 0);
-
-  return resultado;
 }
 
-export async function obtenerIngresosPorSede(
-  desde?: string,
-  hasta?: string
-): Promise<IngresosPorSede[]> {
-  const desdeFecha = desde ?? primerDiaMes();
-  const hastaFecha = hasta ?? hoyISO();
-  const hastaFinal = new Date(hastaFecha);
-  hastaFinal.setHours(23, 59, 59, 999);
+export async function obtenerIngresosPorSede(desde?: string, hasta?: string): Promise<IngresosPorSede[]> {
+  const d = desde ?? primerDiaMesLima();
+  const h = hasta ?? hoyLima();
 
   const { data: pagos } = await supabase
     .from("pagos")
     .select("sede_id, monto")
-    .gte("fecha", desdeFecha)
-    .lte("fecha", hastaFinal.toISOString())
+    .gte("fecha", inicioDiaLima(d))
+    .lte("fecha", finDiaLima(h))
     .returns<{ sede_id: string; monto: number }[]>();
 
   if (!pagos || pagos.length === 0) return [];
 
-  const { data: sedes } = await supabase
-    .from("sedes")
-    .select("id, nombre")
-    .returns<{ id: string; nombre: string }[]>();
+  const { data: sedes } = await supabase.from("sedes").select("id, nombre").returns<{ id: string; nombre: string }[]>();
 
   const mapaSedes = new Map((sedes ?? []).map((s) => [s.id, s.nombre]));
   const conteo = new Map<string, number>();
-
-  pagos.forEach((p) => {
-    conteo.set(p.sede_id, (conteo.get(p.sede_id) ?? 0) + (p.monto ?? 0));
-  });
+  pagos.forEach((p) => conteo.set(p.sede_id, (conteo.get(p.sede_id) ?? 0) + Number(p.monto ?? 0)));
 
   return Array.from(conteo.entries())
-    .map(([sede_id, ingresos]) => ({
-      sede: mapaSedes.get(sede_id) ?? "Sede",
-      ingresos,
-    }))
+    .map(([sedeId, ingresos]) => ({ sede: mapaSedes.get(sedeId) ?? "Sede", ingresos }))
     .sort((a, b) => b.ingresos - a.ingresos);
 }

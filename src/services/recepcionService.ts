@@ -1,4 +1,5 @@
 import { supabase } from "@/lib/supabaseClient";
+import { finDiaLima, inicioDiaLima } from "@/lib/fechas";
 
 export const METODOS_STAFF = ["Efectivo", "Yape", "Plin", "Transferencia"] as const;
 export type MetodoStaff = (typeof METODOS_STAFF)[number];
@@ -70,9 +71,7 @@ export function generarClave(largo = 10): string {
    Asistencias y caja del día (hora de Lima, UTC-5 sin horario de verano)
    ===================================================================== */
 
-export function hoyLima(): string {
-  return new Date().toLocaleDateString("en-CA", { timeZone: "America/Lima" });
-}
+export { hoyLima } from "@/lib/fechas";
 
 export function horaLima(iso: string): number {
   const h = Number(
@@ -82,7 +81,7 @@ export function horaLima(iso: string): number {
 }
 
 function rangoDia(fecha: string) {
-  return { desde: `${fecha}T00:00:00-05:00`, hasta: `${fecha}T23:59:59.999-05:00` };
+  return { desde: inicioDiaLima(fecha), hasta: finDiaLima(fecha) };
 }
 
 interface NombreRow {

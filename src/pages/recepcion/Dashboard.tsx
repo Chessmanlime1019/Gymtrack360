@@ -15,13 +15,11 @@ import {
 
 import { useAuth } from "@/hooks/useAuth";
 import { AsyncState } from "@/components/ui/AsyncState";
+import { diaLima, hoyLima } from "@/lib/fechas";
 import { obtenerDashboardGlobal } from "@/services/dashboardService";
 import { obtenerAsistencias } from "@/services/asistenciasService";
 import { obtenerPagos } from "@/services/pagosService";
 
-function hoyISO(): string {
-  return new Date().toISOString().slice(0, 10);
-}
 function formatMoney(n: number): string {
   return `S/ ${n.toLocaleString("es-PE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
@@ -58,7 +56,7 @@ function KpiCard({
 export default function RecepcionDashboard() {
   const { sesion } = useAuth();
   const sedeId = sesion?.sedeId ?? null;
-  const hoy = hoyISO();
+  const hoy = hoyLima();
 
   const {
     data: kpis,
@@ -84,7 +82,7 @@ export default function RecepcionDashboard() {
 
   const pagosHoy = useMemo(() => {
     if (!pagos) return [];
-    return pagos.filter((p) => p.fecha.slice(0, 10) === hoy);
+    return pagos.filter((p) => diaLima(p.fecha) === hoy);
   }, [pagos, hoy]);
 
   const resumenPorMetodo = useMemo(() => {

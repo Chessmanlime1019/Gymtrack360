@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import * as XLSX from "xlsx";
 import { useAuth } from "@/hooks/useAuth";
 import { AsyncState } from "@/components/ui/AsyncState";
+import { diaLima, finDiaLima, hoyLima, inicioDiaLima, primerDiaMesLima } from "@/lib/fechas";
 import { BadgeEstadoMembresia } from "@/components/ui/BadgeEstadoMembresia";
 import { obtenerSedesActivas, obtenerTodasLasSedes } from "@/services/sedesService";
 import { obtenerClientes, obtenerClientesSimple } from "@/services/clientesService";
@@ -24,14 +25,6 @@ import {
 
 type ReporteTipo = "clientes" | "membresias" | "asistencias" | "pagos" | "historial";
 
-function primerDiaMes(): string {
-  const hoy = new Date();
-  return new Date(hoy.getFullYear(), hoy.getMonth(), 1).toISOString().slice(0, 10);
-}
-
-function hoyISO(): string {
-  return new Date().toISOString().slice(0, 10);
-}
 
 function formatMoney(n: number): string {
   return `S/ ${n.toLocaleString("es-PE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
@@ -77,8 +70,8 @@ export default function AdminReportes() {
   const [tab, setTab] = useState<ReporteTipo>("clientes");
   const [sedeFiltro, setSedeFiltro] = useState<string>(sesion?.sedeId ?? "");
   const [clienteFiltro, setClienteFiltro] = useState<string>("");
-  const [desde, setDesde] = useState(primerDiaMes());
-  const [hasta, setHasta] = useState(hoyISO());
+  const [desde, setDesde] = useState(primerDiaMesLima());
+  const [hasta, setHasta] = useState(hoyLima());
 
   const { data: sedes } = useQuery({
     queryKey: ["sedes-activas"],
@@ -98,11 +91,6 @@ export default function AdminReportes() {
   const sedeActivaId = esSuperAdmin ? (sedeFiltro || null) : (sesion?.sedeId ?? null);
   const nombreSedeActiva = sedeFiltro ? (mapaSedes.get(sedeFiltro) ?? "") : "Todas las sedes";
 
-  const hastaFinal = useMemo(() => {
-    const d = new Date(hasta);
-    d.setHours(23, 59, 59, 999);
-    return d.toISOString();
-  }, [hasta]);
 
   // Para el filtro "Cliente" (solo en Membresías por ahora -- ver nota
   // en el mensaje: para sumarlo también en Pagos/Asistencias hace falta
@@ -127,7 +115,7 @@ export default function AdminReportes() {
 
   const { data: asistencias, isLoading: loadingAsistencias } = useQuery({
     queryKey: ["reporte-asistencias", sedeActivaId, desde, hasta],
-    queryFn: () => obtenerAsistencias(sedeActivaId, desde, hastaFinal),
+    queryFn: () => obtenerAsistencias(sedeActivaId, desde, hasta),
     enabled: tab === "asistencias",
   });
 
@@ -139,14 +127,14 @@ export default function AdminReportes() {
 
   const { data: historial, isLoading: loadingHistorial } = useQuery({
     queryKey: ["reporte-historial", sedeActivaId, desde, hasta],
-    queryFn: () => obtenerHistorial(sedeActivaId, desde, hastaFinal),
+    queryFn: () => obtenerHistorial(sedeActivaId, inicioDiaLima(desde), finDiaLima(hasta)),
     enabled: tab === "historial",
   });
 
   const clientesFiltrados = useMemo(() => {
     if (!clientes) return [];
     return clientes.filter((c) => {
-      const fechaCreado = c.created_at.slice(0, 10);
+      const fechaCreado = diaLima(c.created_at);
       return fechaCreado >= desde && fechaCreado <= hasta;
     });
   }, [clientes, desde, hasta]);
@@ -163,7 +151,7 @@ export default function AdminReportes() {
   const pagosFiltrados = useMemo(() => {
     if (!pagos) return [];
     return pagos.filter((p) => {
-      const fechaPago = p.fecha.slice(0, 10);
+      const fechaPago = diaLima(p.fecha);
       return fechaPago >= desde && fechaPago <= hasta;
     });
   }, [pagos, desde, hasta]);
