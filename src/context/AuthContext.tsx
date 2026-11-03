@@ -12,6 +12,7 @@ interface AuthContextValue {
   sesion: SesionUsuario | null;
   cargando: boolean;
   recuperarPassword: (email: string) => Promise<void>;
+  verificarCodigoRecuperacion: (email: string, codigo: string) => Promise<void>;
   actualizarPassword: (nuevaPassword: string) => Promise<void>;
   login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
@@ -114,6 +115,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (error) throw error;
   }
 
+  // Valida el código que llega en el correo de recuperación. Si es correcto,
+  // Supabase abre una sesión temporal que permite cambiar la contraseña.
+  async function verificarCodigoRecuperacion(email: string, codigo: string) {
+    const { error } = await supabase.auth.verifyOtp({ email, token: codigo, type: "recovery" });
+    if (error) throw error;
+  }
+
   async function actualizarPassword(nuevaPassword: string) {
     const { error } = await supabase.auth.updateUser({ password: nuevaPassword });
     if (error) throw error;
@@ -149,6 +157,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         logout,
         registrar,
         recuperarPassword,
+        verificarCodigoRecuperacion,
         actualizarPassword,
         refrescarPerfil,
       }}
