@@ -16,9 +16,21 @@
       content="Gestión y acceso digital para Cascada Gym."
     />
 
-    <!-- Tema oscuro: evita el destello blanco al cargar -->
-    <meta name="color-scheme" content="dark" />
+    <!-- Tema claro u oscuro: se aplica antes de cargar la app para que no
+         parpadee (misma clave y regla que src/context/TemaContext.tsx) -->
+    <meta name="color-scheme" content="light dark" />
     <meta name="theme-color" content="#0B0F13" />
+    <script>
+      (function () {
+        var t = "system";
+        try { t = localStorage.getItem("gt-tema") || "system"; } catch (e) {}
+        var oscuro = t === "dark" || (t !== "light" && matchMedia("(prefers-color-scheme: dark)").matches);
+        var raiz = document.documentElement;
+        if (oscuro) raiz.classList.add("dark");
+        raiz.style.colorScheme = oscuro ? "dark" : "light";
+        document.querySelector('meta[name="theme-color"]').setAttribute("content", oscuro ? "#0B0F13" : "#FFFFFF");
+      })();
+    </script>
 
     <!-- Iconos (el manifest lo agrega solo vite-plugin-pwa) -->
     <link rel="icon" href="/icons/favicon.ico" sizes="any" />
@@ -34,7 +46,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black" />
   </head>
 
-  <body class="bg-background text-white" style="background:#060A0E">
+  <body class="bg-background text-ink">
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

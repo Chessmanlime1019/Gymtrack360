@@ -178,7 +178,7 @@ export default function AdminPlanes() {
         {puedeCrear && (
           <button
             onClick={abrirNuevo}
-            className="shrink-0 inline-flex items-center gap-2 bg-primary text-ink font-semibold rounded-lg h-11 px-4 text-sm hover:bg-primary-dark transition-colors"
+            className="shrink-0 inline-flex items-center gap-2 bg-primary text-white font-semibold rounded-lg h-11 px-4 text-sm hover:bg-primary-dark transition-colors"
           >
             <Plus className="w-4 h-4" />
             <span className="hidden sm:inline">Nuevo plan</span>
@@ -224,8 +224,8 @@ export default function AdminPlanes() {
               onClick={() => setSedeActiva(null)}
               className={`flex items-center gap-2.5 px-4 py-3 text-sm text-left whitespace-nowrap shrink-0 lg:shrink lg:whitespace-normal border-b border-line transition-colors ${
                 sedeActiva === null
-                  ? "bg-primary text-ink font-semibold"
-                  : "text-ink-2 hover:bg-white/5"
+                  ? "bg-primary text-white font-semibold"
+                  : "text-ink-2 hover:bg-ink/5"
               }`}
             >
               <Globe className="w-4 h-4 shrink-0" />
@@ -239,8 +239,8 @@ export default function AdminPlanes() {
                 onClick={() => setSedeActiva(s.id)}
                 className={`flex items-center gap-2.5 px-4 py-3 text-sm text-left whitespace-nowrap shrink-0 lg:shrink lg:whitespace-normal border-b border-line last:border-b-0 transition-colors ${
                   sedeActiva === s.id
-                    ? "bg-primary text-ink font-semibold"
-                    : "text-ink-2 hover:bg-white/5"
+                    ? "bg-primary text-white font-semibold"
+                    : "text-ink-2 hover:bg-ink/5"
                 }`}
               >
                 <Building2 className="w-4 h-4 shrink-0" />
@@ -265,7 +265,7 @@ export default function AdminPlanes() {
           >
             <div className="hidden md:block bg-surface rounded-xl border border-line overflow-hidden">
               <table className="w-full text-sm">
-                <thead className="bg-black/20 text-muted text-xs uppercase tracking-wide">
+                <thead className="bg-background/70 text-muted text-xs uppercase tracking-wide">
                   <tr>
                     <th className="text-left px-4 py-3 font-semibold">Nombre</th>
                     <th className="text-left px-4 py-3 font-semibold">Precio</th>
@@ -317,7 +317,7 @@ export default function AdminPlanes() {
                           <button
                             onClick={() => abrirEdicion(plan)}
                             aria-label="Editar plan"
-                            className="p-1.5 rounded-md text-muted hover:bg-white/5 hover:text-primary transition-colors"
+                            className="p-1.5 rounded-md text-muted hover:bg-ink/5 hover:text-primary transition-colors"
                           >
                             <Pencil className="w-4 h-4" />
                           </button>
@@ -352,7 +352,7 @@ export default function AdminPlanes() {
                       <button
                         onClick={() => abrirEdicion(plan)}
                         aria-label="Editar plan"
-                        className="p-1.5 rounded-md text-muted hover:bg-white/5 hover:text-primary transition-colors"
+                        className="p-1.5 rounded-md text-muted hover:bg-ink/5 hover:text-primary transition-colors"
                       >
                         <Pencil className="w-4 h-4" />
                       </button>
@@ -458,7 +458,7 @@ export default function AdminPlanes() {
                       className={`flex items-center gap-2 rounded-lg border px-3 py-2.5 text-sm cursor-pointer transition-colors ${
                         alcance === "todas"
                           ? "border-primary bg-primary/10 text-ink"
-                          : "border-line text-ink-2 hover:bg-white/5"
+                          : "border-line text-ink-2 hover:bg-ink/5"
                       }`}
                     >
                       <input type="radio" value="todas" {...register("alcance")} className="accent-primary" />
@@ -468,7 +468,7 @@ export default function AdminPlanes() {
                       className={`flex items-center gap-2 rounded-lg border px-3 py-2.5 text-sm cursor-pointer transition-colors ${
                         alcance === "sede"
                           ? "border-primary bg-primary/10 text-ink"
-                          : "border-line text-ink-2 hover:bg-white/5"
+                          : "border-line text-ink-2 hover:bg-ink/5"
                       }`}
                     >
                       <input type="radio" value="sede" {...register("alcance")} className="accent-primary" />
@@ -525,7 +525,7 @@ export default function AdminPlanes() {
             <button
               type="submit"
               disabled={guardarMutacion.isPending}
-              className="w-full bg-primary text-ink font-semibold rounded-lg py-2.5 text-sm hover:bg-primary-dark transition-colors disabled:opacity-50"
+              className="w-full bg-primary text-white font-semibold rounded-lg py-2.5 text-sm hover:bg-primary-dark transition-colors disabled:opacity-50"
             >
               {guardarMutacion.isPending ? "Guardando..." : "Guardar plan"}
             </button>

@@ -44,9 +44,9 @@ export function QuickAccessMenu() {
         className="
           p-2
           rounded-lg
-          text-[#929ba4]
-          hover:bg-white/[0.05]
-          hover:text-white
+          text-ink-2
+          hover:bg-ink/5
+          hover:text-ink
           transition-colors
         "
       >
@@ -60,9 +60,9 @@ export function QuickAccessMenu() {
             right-0
             mt-2
             w-56
-            bg-[#1b2024]
+            bg-surface
             border
-            border-[#30363d]
+            border-line
             rounded-xl
             shadow-2xl
             z-50
@@ -78,7 +78,7 @@ export function QuickAccessMenu() {
               text-[10px]
               uppercase
               tracking-[0.12em]
-              text-[#747e88]
+              text-muted
             "
           >
             Acceso rápido
@@ -96,9 +96,9 @@ export function QuickAccessMenu() {
                 px-3
                 py-2.5
                 text-sm
-                text-[#a2aab2]
-                hover:bg-white/[0.05]
-                hover:text-[#f15a24]
+                text-ink-2
+                hover:bg-ink/5
+                hover:text-primary
                 transition-colors
               "
             >

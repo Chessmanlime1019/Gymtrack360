@@ -1,10 +1,12 @@
 import { useMemo, useState, type ReactNode } from "react";
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { CalendarCheck, ClipboardList, Dumbbell, Plus, UserRound, Users } from "lucide-react";
+import { BellRing, CalendarCheck, ClipboardList, Dumbbell, Plus, UserRound, Users } from "lucide-react";
 
 import { AsyncState } from "@/components/ui/AsyncState";
 import { AvisosBanner } from "@/components/avisos/AvisosBanner";
+import { BotonAccion, EncabezadoTablero, KpiCard, Panel } from "@/components/ui/Tablero";
+import { hoyLima } from "@/lib/fechas";
 import { obtenerMiPerfil } from "@/services/perfilService";
 import {
   obtenerResumenProfesional,
@@ -91,18 +93,20 @@ export default function DashboardProfesional() {
   return (
     <div className="space-y-6">
       <AvisosBanner rutaTodos="/profesional/avisos" />
-      <div className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h1 className="text-2xl text-ink">{perfil.data ? `Hola, ${perfil.data.nombre}` : "Dashboard"}</h1>
-          <p className="text-muted text-sm mt-1">Así van tus clientes hoy.</p>
-        </div>
-        <Link
-          to="/profesional/rutinas"
-          className="inline-flex items-center gap-2 bg-primary hover:bg-primary-dark text-white font-semibold rounded-xl px-5 min-h-[44px]"
-        >
-          <Plus size={18} /> Nueva rutina
-        </Link>
-      </div>
+      <EncabezadoTablero
+        nombre={perfil.data?.nombre}
+        subtitulo="Así van tus clientes hoy"
+        acciones={
+          <>
+            <BotonAccion to="/profesional/seguimiento" icono={BellRing}>
+              Seguimiento
+            </BotonAccion>
+            <BotonAccion to="/profesional/rutinas" icono={Plus} principal>
+              Nueva rutina
+            </BotonAccion>
+          </>
+        }
+      />
 
       <AsyncState
         isLoading={perfil.isLoading || resumenQ.isLoading}
@@ -110,56 +114,79 @@ export default function DashboardProfesional() {
         errorMessage="No se pudo cargar tu panel."
       >
         {/* KPIs */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          <Kpi icono={<Users size={18} />} label="Mis clientes" valor={kpis.clientes} />
-          <Kpi icono={<Dumbbell size={18} />} label="Rutinas activas" valor={resumen?.rutinasActivas ?? 0} />
-          <Kpi icono={<ClipboardList size={18} />} label="Sin rutina" valor={kpis.sinRutina} alerta={kpis.sinRutina > 0} />
-          <Kpi icono={<CalendarCheck size={18} />} label="Membresía por vencer" valor={kpis.porVencer} alerta={kpis.porVencer > 0} />
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+          <KpiCard label="Mis clientes" value={String(kpis.clientes)} detalle="A tu cargo" icon={Users} tono="primary" />
+          <KpiCard
+            label="Rutinas activas"
+            value={String(resumen?.rutinasActivas ?? 0)}
+            detalle={`de ${resumen?.totalRutinas ?? 0} creadas`}
+            icon={Dumbbell}
+            tono="info"
+          />
+          <KpiCard
+            label="Sin rutina"
+            value={String(kpis.sinRutina)}
+            detalle={kpis.sinRutina ? "Necesitan un plan" : "Todos tienen plan"}
+            icon={ClipboardList}
+            tono={kpis.sinRutina ? "warning" : "success"}
+          />
+          <KpiCard
+            label="Por vencer"
+            value={String(kpis.porVencer)}
+            detalle="Membresías en 7 días"
+            icon={CalendarCheck}
+            tono={kpis.porVencer ? "danger" : "neutro"}
+          />
         </div>
 
         <div className="grid gap-6 lg:grid-cols-[1fr_360px] items-start">
           <div className="space-y-6 min-w-0">
             {/* Actividad 7 días */}
-            <section className="bg-surface border border-line rounded-2xl p-5">
-              <div className="flex items-center justify-between">
-                <h2 className="text-lg text-ink">Visitas de tus clientes</h2>
-                <span className="text-muted text-xs">Últimos 7 días</span>
-              </div>
-              <div className="mt-5 flex items-end gap-3 h-32">
+            <Panel
+              titulo="Visitas de tus clientes"
+              subtitulo={(() => {
+                const total = (resumen?.visitasPorDia ?? []).reduce((s, d) => s + d.total, 0);
+                return `${total} ${total === 1 ? "visita" : "visitas"} en los últimos 7 días`;
+              })()}
+            >
+              <div className="flex items-end gap-2 h-40 pt-2">
                 {(resumen?.visitasPorDia ?? []).map((d) => {
                   const fecha = new Date(`${d.fecha}T00:00:00`);
+                  const esHoy = d.fecha === hoyLima();
                   return (
-                    <div key={d.fecha} className="flex-1 flex flex-col items-center gap-2 min-w-0">
-                      <span className="text-xs text-ink-2 font-semibold">{d.total}</span>
-                      <div className="w-full flex-1 flex items-end">
+                    <div key={d.fecha} className="flex-1 flex flex-col items-center gap-2 min-w-0" title={`${d.total} visitas`}>
+                      <span className="text-xs text-ink font-semibold tabular-nums">{d.total}</span>
+                      <div className="w-full flex-1 flex items-end justify-center border-b border-line">
                         <div
-                          className="w-full rounded-t-lg bg-primary/80"
-                          style={{ height: `${Math.max((d.total / maxVisitas) * 100, d.total ? 8 : 3)}%` }}
+                          className={`w-full max-w-[28px] rounded-t-[4px] ${esHoy ? "bg-primary" : "bg-primary/35"}`}
+                          style={{ height: `${d.total ? Math.max((d.total / maxVisitas) * 100, 6) : 0}%` }}
                         />
                       </div>
-                      <span className="text-[11px] text-muted capitalize">
-                        {fecha.toLocaleDateString("es-PE", { weekday: "short" }).replace(".", "")}
+                      <span className={`text-[11px] capitalize ${esHoy ? "text-ink font-semibold" : "text-muted"}`}>
+                        {esHoy ? "Hoy" : fecha.toLocaleDateString("es-PE", { weekday: "short" }).replace(".", "")}
                       </span>
                     </div>
                   );
                 })}
               </div>
-            </section>
+            </Panel>
 
             {/* Clientes */}
             <section>
               <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
-                <h2 className="text-lg text-ink">Mis clientes</h2>
+                <h2 className="text-[15px] text-ink">
+                  Mis clientes <span className="text-muted font-medium">· {filtrados.length}</span>
+                </h2>
                 <div className="flex gap-2 overflow-x-auto">
                   {FILTROS.map((f) => (
                     <button
                       key={f.id}
                       type="button"
                       onClick={() => setFiltro(f.id)}
-                      className={`shrink-0 min-h-[40px] px-4 rounded-xl text-sm font-semibold border ${
+                      className={`shrink-0 h-9 px-4 rounded-full text-[13px] font-semibold border transition-colors ${
                         filtro === f.id
-                          ? "bg-primary border-primary text-white"
-                          : "bg-bar border-line text-ink-2 hover:border-line-strong"
+                          ? "bg-ink text-background border-ink"
+                          : "bg-surface border-line text-ink-2 hover:border-line-strong hover:text-ink"
                       }`}
                     >
                       {f.texto}
@@ -195,8 +222,8 @@ export default function DashboardProfesional() {
                         <button
                           type="button"
                           onClick={() => setSeleccionId(c.id)}
-                          className={`w-full text-left bg-surface border rounded-2xl p-4 min-h-[64px] transition-colors ${
-                            activo ? "border-primary" : "border-line hover:border-line-strong"
+                          className={`w-full text-left bg-surface border rounded-2xl p-4 min-h-[64px] transition-all ${
+                            activo ? "border-primary ring-2 ring-primary/15" : "border-line hover:border-line-strong"
                           }`}
                         >
                           <div className="flex items-center gap-3">
@@ -293,30 +320,6 @@ export default function DashboardProfesional() {
           )}
         </div>
       </AsyncState>
-    </div>
-  );
-}
-
-function Kpi({
-  icono,
-  label,
-  valor,
-  alerta = false,
-}: {
-  icono: ReactNode;
-  label: string;
-  valor: number;
-  alerta?: boolean;
-}) {
-  return (
-    <div className="bg-surface border border-line rounded-2xl p-4">
-      <div className="flex items-center justify-between">
-        <p className="text-muted text-xs font-medium">{label}</p>
-        <span className={`w-8 h-8 rounded-lg grid place-items-center ${alerta ? "bg-warning/10 text-warning" : "bg-primary/10 text-primary"}`}>
-          {icono}
-        </span>
-      </div>
-      <p className="gt-kpi text-3xl text-ink mt-3">{valor}</p>
     </div>
   );
 }

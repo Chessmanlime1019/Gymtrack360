@@ -1,4 +1,4 @@
-﻿import { type ReactNode } from "react";
+import { type ReactNode } from "react";
 import { X } from "lucide-react";
 
 interface ModalProps {
@@ -31,7 +31,7 @@ export function Modal({ isOpen, onClose, title, children }: ModalProps) {
           <button
             onClick={onClose}
             aria-label="Cerrar"
-            className="p-2 rounded-lg text-muted hover:bg-white/5 hover:text-ink transition-colors"
+            className="p-2 rounded-lg text-muted hover:bg-ink/5 hover:text-ink transition-colors"
           >
             <X className="w-4 h-4" />
           </button>

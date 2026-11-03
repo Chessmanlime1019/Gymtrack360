@@ -1,28 +1,29 @@
 import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Link } from "react-router-dom";
-import {
-  Banknote,
-  CreditCard,
-  Landmark,
-  ScanLine,
-  Smartphone,
-  TrendingUp,
-  UserRound,
-  Users,
-  Wallet,
-} from "lucide-react";
+import { Banknote, CreditCard, Landmark, ScanLine, Smartphone, TrendingUp, UserRound, Users, Wallet } from "lucide-react";
 
 import { useAuth } from "@/hooks/useAuth";
 import { AsyncState } from "@/components/ui/AsyncState";
+import { BotonAccion, EncabezadoTablero, EstadoMembresias, KpiCard, Panel, SinDatos } from "@/components/ui/Tablero";
 import { diaLima, hoyLima } from "@/lib/fechas";
-import { obtenerDashboardGlobal } from "@/services/dashboardService";
+import { obtenerDashboardGlobal, obtenerMembresiasPorEstado } from "@/services/dashboardService";
 import { obtenerAsistencias } from "@/services/asistenciasService";
 import { obtenerPagos } from "@/services/pagosService";
 
 function formatMoney(n: number): string {
   return `S/ ${n.toLocaleString("es-PE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
+
+const horaCorta = (iso: string) =>
+  new Date(iso).toLocaleTimeString("es-PE", { hour: "2-digit", minute: "2-digit", timeZone: "America/Lima" });
+
+const iniciales = (nombre: string) =>
+  nombre
+    .split(" ")
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((p) => p[0]?.toUpperCase())
+    .join("");
 
 const ICONO_METODO: Record<string, React.ElementType> = {
   Efectivo: Banknote,
@@ -31,40 +32,20 @@ const ICONO_METODO: Record<string, React.ElementType> = {
   Transferencia: Landmark,
 };
 
-function KpiCard({
-  label,
-  value,
-  icon: Icon,
-}: {
-  label: string;
-  value: string;
-  icon: React.ElementType;
-}) {
-  return (
-    <div className="bg-surface rounded-xl p-5 border border-line">
-      <div className="flex items-center justify-between mb-3">
-        <p className="text-muted text-xs font-medium">{label}</p>
-        <div className="w-9 h-9 rounded-lg bg-primary/10 border border-primary/15 flex items-center justify-center">
-          <Icon className="w-[18px] h-[18px] text-primary" />
-        </div>
-      </div>
-      <p className="text-2xl font-bold tracking-tight text-ink">{value}</p>
-    </div>
-  );
-}
-
 export default function RecepcionDashboard() {
   const { sesion } = useAuth();
   const sedeId = sesion?.sedeId ?? null;
   const hoy = hoyLima();
 
-  const {
-    data: kpis,
-    isLoading: cargandoKpis,
-    isError: errorKpis,
-  } = useQuery({
+  const { data: kpis, isLoading: cargandoKpis, isError: errorKpis } = useQuery({
     queryKey: ["recepcion-dashboard-kpis", sedeId, hoy],
     queryFn: () => obtenerDashboardGlobal(sedeId, hoy, hoy),
+    enabled: !!sedeId,
+  });
+
+  const { data: estados } = useQuery({
+    queryKey: ["recepcion-dashboard-estados", sedeId],
+    queryFn: () => obtenerMembresiasPorEstado(sedeId),
     enabled: !!sedeId,
   });
 
@@ -72,6 +53,7 @@ export default function RecepcionDashboard() {
     queryKey: ["recepcion-dashboard-accesos", sedeId, hoy],
     queryFn: () => obtenerAsistencias(sedeId, hoy, hoy),
     enabled: !!sedeId,
+    refetchInterval: 30_000,
   });
 
   const { data: pagos } = useQuery({
@@ -80,10 +62,8 @@ export default function RecepcionDashboard() {
     enabled: !!sedeId,
   });
 
-  const pagosHoy = useMemo(() => {
-    if (!pagos) return [];
-    return pagos.filter((p) => diaLima(p.fecha) === hoy);
-  }, [pagos, hoy]);
+  const pagosHoy = useMemo(() => (pagos ?? []).filter((p) => diaLima(p.fecha) === hoy), [pagos, hoy]);
+  const montoTotalHoy = pagosHoy.reduce((suma, p) => suma + p.monto, 0);
 
   const resumenPorMetodo = useMemo(() => {
     const mapa = new Map<string, { cantidad: number; monto: number }>();
@@ -93,179 +73,143 @@ export default function RecepcionDashboard() {
       actual.monto += p.monto;
       mapa.set(p.metodo_pago, actual);
     });
-    const montoMaximo = Math.max(1, ...Array.from(mapa.values()).map((v) => v.monto));
     return Array.from(mapa.entries())
-      .map(([metodo, v]) => ({ metodo, ...v, porcentaje: (v.monto / montoMaximo) * 100 }))
+      .map(([metodo, v]) => ({ metodo, ...v, porcentaje: montoTotalHoy ? (v.monto / montoTotalHoy) * 100 : 0 }))
       .sort((a, b) => b.monto - a.monto);
-  }, [pagosHoy]);
-
-  const montoTotalHoy = pagosHoy.reduce((suma, p) => suma + p.monto, 0);
+  }, [pagosHoy, montoTotalHoy]);
 
   if (!sedeId) {
     return (
-      <div className="bg-surface rounded-xl p-10 text-center text-muted text-sm border border-line">
-        Tu cuenta no tiene una sede asignada. Pídele a tu Admin de Sede que te la asigne
-        desde el módulo de Usuarios.
+      <div className="bg-surface rounded-2xl p-10 text-center text-muted text-sm border border-line">
+        Tu cuenta no tiene una sede asignada. Pídele a tu Admin de Sede que te la asigne desde el módulo de Usuarios.
       </div>
     );
   }
 
+  const canceladas = estados?.find((e) => e.estado === "Canceladas")?.cantidad ?? 0;
+
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-xl md:text-2xl font-bold text-ink">Panel de Recepción</h1>
-        <p className="text-muted text-sm mt-1">Resumen de hoy en tu sede</p>
-      </div>
+      <EncabezadoTablero
+        nombre={sesion?.nombre}
+        subtitulo="Resumen de hoy en tu sede"
+        acciones={
+          <>
+            <BotonAccion to="/recepcion/buscar-cliente" icono={UserRound}>
+              Buscar cliente
+            </BotonAccion>
+            <BotonAccion to="/recepcion/registrar-pago" icono={Wallet}>
+              Registrar pago
+            </BotonAccion>
+            <BotonAccion to="/recepcion/control-acceso" icono={ScanLine} principal>
+              Control de acceso
+            </BotonAccion>
+          </>
+        }
+      />
 
-      {/* ================= ACCESOS RÁPIDOS ================= */}
-      <div className="flex flex-wrap gap-2">
-        <Link
-          to="/recepcion/control-acceso"
-          className="inline-flex items-center gap-2 bg-primary text-ink font-semibold rounded-lg h-10 px-4 text-sm hover:bg-primary-dark transition-colors"
-        >
-          <ScanLine className="w-4 h-4" />
-          Control de acceso
-        </Link>
-        <Link
-          to="/recepcion/buscar-cliente"
-          className="inline-flex items-center gap-2 bg-surface border border-line text-ink font-medium rounded-lg h-10 px-4 text-sm hover:bg-white/5 transition-colors"
-        >
-          <UserRound className="w-4 h-4" />
-          Buscar cliente
-        </Link>
-        <Link
-          to="/recepcion/registrar-pago"
-          className="inline-flex items-center gap-2 bg-surface border border-line text-ink font-medium rounded-lg h-10 px-4 text-sm hover:bg-white/5 transition-colors"
-        >
-          <Wallet className="w-4 h-4" />
-          Registrar pago
-        </Link>
-      </div>
-
-      {/* ================= KPIs ================= */}
-      <AsyncState
-        isLoading={cargandoKpis}
-        isError={errorKpis}
-        errorMessage="No se pudieron cargar los indicadores."
-      >
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <KpiCard label="Check-ins hoy" value={String(kpis?.checkinsHoy ?? 0)} icon={ScanLine} />
-          <KpiCard label="Clientes activos" value={String(kpis?.clientesActivos ?? 0)} icon={Users} />
+      <AsyncState isLoading={cargandoKpis} isError={errorKpis} errorMessage="No se pudieron cargar los indicadores.">
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+          <KpiCard label="Check-ins hoy" value={String(kpis?.checkinsHoy ?? 0)} detalle="Ingresos por QR" icon={ScanLine} tono="info" />
           <KpiCard
-            label="Membresías por vencer"
-            value={String(kpis?.membresiasPorVencer ?? 0)}
-            icon={CreditCard}
+            label="Clientes activos"
+            value={String(kpis?.clientesActivos ?? 0)}
+            detalle={`de ${kpis?.totalClientes ?? 0} registrados`}
+            icon={Users}
+            tono="primary"
           />
-          <KpiCard label="Ingresos de hoy" value={formatMoney(montoTotalHoy)} icon={TrendingUp} />
+          <KpiCard
+            label="Por vencer"
+            value={String(kpis?.membresiasPorVencer ?? 0)}
+            detalle="En los próximos 7 días"
+            icon={CreditCard}
+            tono="warning"
+          />
+          <KpiCard
+            label="Ingresos de hoy"
+            value={formatMoney(montoTotalHoy)}
+            detalle={`${pagosHoy.length} ${pagosHoy.length === 1 ? "pago" : "pagos"} registrados`}
+            icon={TrendingUp}
+            tono="success"
+          />
         </div>
       </AsyncState>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-        {/* ================= PAGOS DE HOY POR MÉTODO ================= */}
-        <div className="bg-surface rounded-xl border border-line overflow-hidden">
-          <div className="px-5 py-4 border-b border-line">
-            <p className="text-sm font-semibold text-ink">Pagos de hoy por método</p>
-          </div>
-          <div className="p-5">
-            {resumenPorMetodo.length === 0 ? (
-              <p className="text-muted text-sm text-center py-6">
-                Todavía no se registró ningún pago hoy.
-              </p>
-            ) : (
-              <div className="space-y-4">
-                {resumenPorMetodo.map((r) => {
-                  const Icono = ICONO_METODO[r.metodo] ?? Wallet;
-                  return (
-                    <div key={r.metodo}>
-                      <div className="flex items-center justify-between text-sm mb-1.5">
-                        <span className="flex items-center gap-2 text-ink-2">
-                          <Icono className="w-4 h-4 text-muted" />
-                          {r.metodo} <span className="text-muted">({r.cantidad})</span>
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+        <Panel
+          titulo="Pagos de hoy por método"
+          subtitulo={`${formatMoney(montoTotalHoy)} cobrados hoy`}
+          accion={{ texto: "Caja del día", to: "/recepcion/caja" }}
+        >
+          {resumenPorMetodo.length === 0 ? (
+            <SinDatos mensaje="Todavía no se registró ningún pago hoy" icono={Wallet} />
+          ) : (
+            <ul className="space-y-1">
+              {resumenPorMetodo.map((r) => {
+                const Icono = ICONO_METODO[r.metodo] ?? Wallet;
+                return (
+                  <li key={r.metodo} className="flex items-center gap-3.5 rounded-xl px-2 py-2.5 -mx-2">
+                    <span className="w-9 h-9 rounded-lg grid place-items-center shrink-0 bg-ink/5 text-ink-2">
+                      <Icono className="w-4 h-4" />
+                    </span>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-baseline justify-between gap-3">
+                        <span className="text-sm text-ink font-medium">
+                          {r.metodo}
+                          <span className="text-muted text-xs font-normal ml-1.5">
+                            {r.cantidad} {r.cantidad === 1 ? "pago" : "pagos"}
+                          </span>
                         </span>
-                        <span className="text-ink font-medium">{formatMoney(r.monto)}</span>
+                        <span className="text-sm font-bold text-ink tabular-nums">{formatMoney(r.monto)}</span>
                       </div>
-                      <div className="h-2 rounded-full bg-background overflow-hidden">
-                        <div
-                          className="h-full bg-primary rounded-full"
-                          style={{ width: `${r.porcentaje}%` }}
-                        />
+                      <div className="h-1.5 rounded-full bg-ink/5 mt-2">
+                        <div className="h-1.5 rounded-full bg-primary" style={{ width: `${Math.max(4, r.porcentaje)}%` }} />
                       </div>
                     </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-        </div>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </Panel>
 
-        {/* ================= RESUMEN DEL DÍA ================= */}
-        <div className="bg-surface rounded-xl border border-line overflow-hidden">
-          <div className="px-5 py-4 border-b border-line">
-            <p className="text-sm font-semibold text-ink">Resumen del día</p>
-          </div>
-          <div className="divide-y divide-line">
-            <FilaResumen label="Check-ins hoy" valor={String(kpis?.checkinsHoy ?? 0)} />
-            <FilaResumen label="Pagos registrados hoy" valor={String(pagosHoy.length)} />
-            <FilaResumen label="Monto cobrado hoy" valor={formatMoney(montoTotalHoy)} />
-            <FilaResumen
-              label="Membresías por vencer"
-              valor={String(kpis?.membresiasPorVencer ?? 0)}
-            />
-            <FilaResumen
-              label="Membresías vencidas"
-              valor={String(kpis?.membresiasVencidas ?? 0)}
-            />
-          </div>
-        </div>
+        <Panel titulo="Membresías de tu sede" subtitulo="Estado actual" accion={{ texto: "Ver membresías", to: "/recepcion/membresias" }}>
+          <EstadoMembresias
+            vigentes={kpis?.membresiasActivas ?? 0}
+            porVencer={kpis?.membresiasPorVencer ?? 0}
+            vencidas={kpis?.membresiasVencidas ?? 0}
+            canceladas={canceladas}
+          />
+        </Panel>
       </div>
 
-      {/* ================= ÚLTIMOS ACCESOS DE HOY ================= */}
-      <div className="bg-surface rounded-xl border border-line overflow-hidden">
-        <div className="px-5 py-4 border-b border-line flex items-center justify-between">
-          <p className="text-sm font-semibold text-ink">Últimos accesos de hoy</p>
-          <Link to="/recepcion/control-acceso" className="text-xs text-primary hover:text-primary-dark font-medium">
-            Ver control de acceso
-          </Link>
-        </div>
-
+      <Panel
+        titulo="Últimos accesos de hoy"
+        subtitulo={`${accesosHoy?.length ?? 0} ingresos registrados`}
+        accion={{ texto: "Control de acceso", to: "/recepcion/control-acceso" }}
+        sinRelleno
+      >
         <AsyncState
           isLoading={cargandoAccesos}
           isError={false}
           isEmpty={!accesosHoy || accesosHoy.length === 0}
           emptyMessage="Aún no hay accesos registrados hoy."
         >
-          <table className="w-full text-sm">
-            <thead className="bg-black/20 text-muted text-xs uppercase tracking-wide">
-              <tr>
-                <th className="text-left px-5 py-3 font-semibold">Cliente</th>
-                <th className="text-right px-5 py-3 font-semibold">Hora</th>
-              </tr>
-            </thead>
-            <tbody>
-              {(accesosHoy ?? []).slice(0, 8).map((a) => (
-                <tr key={a.id} className="border-t border-line">
-                  <td className="px-5 py-3 text-ink">{a.clienteNombre}</td>
-                  <td className="px-5 py-3 text-right text-muted text-xs">
-                    {new Date(a.fecha_hora).toLocaleTimeString("es-PE", {
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <ul className="divide-y divide-line border-t border-line">
+            {(accesosHoy ?? []).slice(0, 8).map((a) => (
+              <li key={a.id} className="flex items-center gap-3 px-5 py-3 hover:bg-ink/[0.03]">
+                <span className="w-9 h-9 rounded-full grid place-items-center shrink-0 bg-primary/10 text-primary text-xs font-bold">
+                  {iniciales(a.clienteNombre)}
+                </span>
+                <span className="flex-1 min-w-0 text-sm text-ink font-medium truncate">{a.clienteNombre}</span>
+                <span className="text-xs font-medium text-ink-2 tabular-nums bg-ink/5 rounded-full px-2.5 py-1">
+                  {horaCorta(a.fecha_hora)}
+                </span>
+              </li>
+            ))}
+          </ul>
         </AsyncState>
-      </div>
-    </div>
-  );
-}
-
-function FilaResumen({ label, valor }: { label: string; valor: string }) {
-  return (
-    <div className="flex items-center justify-between px-5 py-3.5 text-sm">
-      <span className="text-ink-2">{label}</span>
-      <span className="text-ink font-semibold">{valor}</span>
+      </Panel>
     </div>
   );
 }

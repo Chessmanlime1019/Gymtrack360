@@ -1,4 +1,4 @@
-﻿import { NavLink } from "react-router-dom";
+import { NavLink } from "react-router-dom";
 
 import { useAuth } from "@/hooks/useAuth";
 import { useRole } from "@/hooks/useRole";
@@ -16,6 +16,7 @@ export function Sidebar() {
   return (
     <aside
       className="
+        zona-oscura
         hidden
         md:flex
         md:flex-col
@@ -87,7 +88,7 @@ export function Sidebar() {
                 duration-200
                 ${
                   isActive
-                    ? "bg-primary text-ink"
+                    ? "bg-primary text-white"
                     : "text-ink-2 hover:bg-surface hover:text-ink"
                 }
               `

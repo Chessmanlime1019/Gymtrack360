@@ -92,7 +92,7 @@ export default function AdminSedes() {
         </div>
         <button
           onClick={abrirNueva}
-          className="shrink-0 inline-flex items-center gap-2 bg-primary text-ink font-semibold rounded-lg h-11 px-4 text-sm hover:bg-primary-dark transition-colors"
+          className="shrink-0 inline-flex items-center gap-2 bg-primary text-white font-semibold rounded-lg h-11 px-4 text-sm hover:bg-primary-dark transition-colors"
         >
           <Plus className="w-4 h-4" />
           <span className="hidden sm:inline">Nueva sede</span>
@@ -130,7 +130,7 @@ export default function AdminSedes() {
                 <button
                   onClick={() => abrirEdicion(sede)}
                   aria-label="Editar sede"
-                  className="shrink-0 p-1.5 rounded-md text-muted hover:bg-white/5 hover:text-primary transition-colors"
+                  className="shrink-0 p-1.5 rounded-md text-muted hover:bg-ink/5 hover:text-primary transition-colors"
                 >
                   <Pencil className="w-4 h-4" />
                 </button>
@@ -196,7 +196,7 @@ export default function AdminSedes() {
           <button
             type="submit"
             disabled={guardarMutacion.isPending}
-            className="w-full bg-primary text-ink font-semibold rounded-lg py-2.5 text-sm hover:bg-primary-dark transition-colors disabled:opacity-50"
+            className="w-full bg-primary text-white font-semibold rounded-lg py-2.5 text-sm hover:bg-primary-dark transition-colors disabled:opacity-50"
           >
             {guardarMutacion.isPending ? "Guardando..." : "Guardar sede"}
           </button>
@@ -222,7 +222,7 @@ export default function AdminSedes() {
               <button
                 type="button"
                 onClick={() => setSedeCambiandoEstado(null)}
-                className="rounded-lg border border-line px-4 py-2 text-sm text-ink-2 hover:bg-white/5"
+                className="rounded-lg border border-line px-4 py-2 text-sm text-ink-2 hover:bg-ink/5"
               >
                 Cancelar
               </button>

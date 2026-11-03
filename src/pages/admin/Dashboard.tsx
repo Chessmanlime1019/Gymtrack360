@@ -1,7 +1,9 @@
 import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
+import { useTema } from "@/context/TemaContext";
 import { AsyncState } from "@/components/ui/AsyncState";
+import { EncabezadoTablero, EstadoMembresias, KpiCard, Panel, SinDatos } from "@/components/ui/Tablero";
 import { hoyLima, primerDiaMesLima } from "@/lib/fechas";
 import { obtenerSedesActivas } from "@/services/sedesService";
 import {
@@ -11,78 +13,79 @@ import {
   obtenerMembresiasPorEstado,
   obtenerIngresosPorSede,
 } from "@/services/dashboardService";
+import { asistenciasAgrupadasPorDia, asistenciasPorSede } from "@/services/asistenciasService";
 import {
-  asistenciasAgrupadasPorDia,
-  asistenciasPorSede,
-} from "@/services/asistenciasService";
-import {
-  Users,
-  CreditCard,
-  ScanLine,
-  TrendingUp,
+  Activity,
+  AlertTriangle,
+  BarChart3,
   Building2,
   CalendarDays,
-  Activity,
+  CreditCard,
+  LineChart as IconoLinea,
+  ScanLine,
+  TrendingUp,
+  Users,
 } from "lucide-react";
-import {
-  BarChart,
-  Bar,
-  LineChart,
-  Line,
-  PieChart,
-  Pie,
-  Cell,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  Legend,
-} from "recharts";
+import { Area, AreaChart, Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 
-const COLORES = ["#F15A24", "#3b82f6", "#10b981", "#f59e0b", "#8b5cf6", "#ec4899"];
+// Recharts dibuja en SVG y recibe colores como valores: un juego por tema.
+// Ejes y grilla discretos (1px, sólidos); la serie es lo único que destaca.
+const COLORES_GRAFICO = {
+  dark: {
+    grilla: "#232A31",
+    eje: "#8F99A3",
+    cursor: "rgba(255,255,255,0.05)",
+    superficie: "#12181E",
+    ingresos: "#E8570C",
+    asistencias: "#4F82F5",
+  },
+  light: {
+    grilla: "#E6EAF0",
+    eje: "#647080",
+    cursor: "rgba(15,23,42,0.04)",
+    superficie: "#FFFFFF",
+    ingresos: "#E8570C",
+    asistencias: "#2563EB",
+  },
+};
 
-function formatMoney(n: number): string {
-  return `S/ ${n.toLocaleString("es-PE", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
-}
+const soles = (n: number) => `S/ ${n.toLocaleString("es-PE", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
+const solesCorto = (n: number) => (n >= 1000 ? `S/ ${(n / 1000).toLocaleString("es-PE", { maximumFractionDigits: 1 })}K` : `S/ ${n}`);
+const diaCorto = (iso: string) =>
+  new Date(`${iso}T12:00:00`).toLocaleDateString("es-PE", { day: "2-digit", month: "short" }).replace(".", "");
 
-function KpiCard({
+// Tooltip en HTML para que use los colores del tema como el resto de la app.
+function TooltipGrafico({
+  active,
+  payload,
   label,
-  value,
-  icon: Icon,
+  nombre,
+  formato,
   color,
 }: {
-  label: string;
-  value: string;
-  icon: React.ElementType;
-  color?: string;
+  active?: boolean;
+  payload?: { value: number }[];
+  label?: string;
+  nombre: string;
+  formato: (v: number) => string;
+  color: string;
 }) {
+  if (!active || !payload?.length) return null;
   return (
-    <div className="bg-surface rounded-[14px] p-5 border border-line shadow-[0_8px_25px_rgba(0,0,0,0.12)] hover:border-[#3a424a] transition-all">
-      <div className="flex items-center justify-between mb-3">
-        <p className="text-muted text-xs font-medium">{label}</p>
-        <div
-          className="w-9 h-9 rounded-lg flex items-center justify-center"
-          style={{ backgroundColor: `${color ?? "#F15A24"}15`, border: `1px solid ${color ?? "#F15A24"}20` }}
-        >
-          <Icon className="w-[18px] h-[18px]" style={{ color: color ?? "#F15A24" }} />
-        </div>
-      </div>
-      <p className="text-[28px] font-bold tracking-tight text-ink">{value}</p>
-    </div>
-  );
-}
-
-function GraficoVacio({ mensaje }: { mensaje: string }) {
-  return (
-    <div className="rounded-xl border border-line bg-background min-h-[220px] flex items-center justify-center">
-      <p className="text-muted text-sm">{mensaje}</p>
+    <div className="rounded-lg border border-line-strong bg-surface px-3 py-2 shadow-lg">
+      <p className="text-muted text-[11px]">{label ? diaCorto(label) : ""}</p>
+      <p className="text-ink text-sm font-semibold mt-0.5 inline-flex items-center gap-1.5">
+        <span className="w-2 h-2 rounded-full" style={{ backgroundColor: color }} />
+        {formato(payload[0].value)} <span className="text-muted font-normal">{nombre}</span>
+      </p>
     </div>
   );
 }
 
 export default function AdminDashboard() {
   const { sesion } = useAuth();
+  const { resuelto } = useTema();
+  const g = COLORES_GRAFICO[resuelto];
   const esSuperAdmin = sesion?.role === "super_admin";
 
   const [sedeFiltro, setSedeFiltro] = useState<string>(sesion?.sedeId ?? "");
@@ -96,6 +99,7 @@ export default function AdminDashboard() {
   });
 
   const sedeActivaId = esSuperAdmin ? (sedeFiltro || null) : (sesion?.sedeId ?? null);
+  const vistaGlobal = esSuperAdmin && !sedeActivaId;
 
   const { data: kpis, isLoading: loadingKpis, isError: errorKpis } = useQuery({
     queryKey: ["dashboard-kpis", sedeActivaId, desde, hasta],
@@ -115,7 +119,7 @@ export default function AdminDashboard() {
   const { data: clientesPorSede } = useQuery({
     queryKey: ["dashboard-clientes-sede"],
     queryFn: obtenerClientesPorSede,
-    enabled: esSuperAdmin && !sedeActivaId,
+    enabled: vistaGlobal,
   });
 
   const { data: membresiasPorEstado } = useQuery({
@@ -126,314 +130,275 @@ export default function AdminDashboard() {
   const { data: ingresosPorSede } = useQuery({
     queryKey: ["dashboard-ingresos-sede", desde, hasta],
     queryFn: () => obtenerIngresosPorSede(desde, hasta),
-    enabled: esSuperAdmin && !sedeActivaId,
+    enabled: vistaGlobal,
   });
 
   const { data: asistenciasPorSedeData } = useQuery({
     queryKey: ["dashboard-asistencias-sede", desde, hasta],
     queryFn: () => asistenciasPorSede(desde, hasta),
-    enabled: esSuperAdmin && !sedeActivaId,
+    enabled: vistaGlobal,
   });
 
-  const datosIngresos = useMemo(() => {
-    if (ingresosPorDia && ingresosPorDia.length > 0) return ingresosPorDia;
-    return [];
-  }, [ingresosPorDia]);
+  const datosIngresos = ingresosPorDia ?? [];
+  const datosAsistencias = asistenciasPorDia ?? [];
+  const totalIngresos = datosIngresos.reduce((s, d) => s + d.ingresos, 0);
+  const totalAsistencias = datosAsistencias.reduce((s, d) => s + d.cantidad, 0);
+  const canceladas = membresiasPorEstado?.find((e) => e.estado === "Canceladas")?.cantidad ?? 0;
 
-  const datosAsistencias = useMemo(() => {
-    if (asistenciasPorDia && asistenciasPorDia.length > 0) return asistenciasPorDia;
-    return [];
-  }, [asistenciasPorDia]);
+  const sedesOrdenadas = useMemo(
+    () => [...(clientesPorSede ?? [])].sort((a, b) => b.cantidad - a.cantidad),
+    [clientesPorSede]
+  );
+  const totalClientesSedes = sedesOrdenadas.reduce((s, x) => s + x.cantidad, 0);
+  const maxClientesSede = Math.max(1, ...sedesOrdenadas.map((s) => s.cantidad));
 
   const datosComparacionSedes = useMemo(() => {
-    if (!esSuperAdmin || sedeActivaId) return [];
+    if (!vistaGlobal) return [];
     const mapa = new Map<string, { sede: string; clientes: number; asistencias: number; ingresos: number }>();
-
-    (clientesPorSede ?? []).forEach((c) => {
-      mapa.set(c.sede, { sede: c.sede, clientes: c.cantidad, asistencias: 0, ingresos: 0 });
-    });
-
+    (clientesPorSede ?? []).forEach((c) => mapa.set(c.sede, { sede: c.sede, clientes: c.cantidad, asistencias: 0, ingresos: 0 }));
     (asistenciasPorSedeData ?? []).forEach((a) => {
-      const existente = mapa.get(a.sede_nombre) ?? { sede: a.sede_nombre, clientes: 0, asistencias: 0, ingresos: 0 };
-      existente.asistencias = a.cantidad;
-      mapa.set(a.sede_nombre, existente);
+      const e = mapa.get(a.sede_nombre) ?? { sede: a.sede_nombre, clientes: 0, asistencias: 0, ingresos: 0 };
+      e.asistencias = a.cantidad;
+      mapa.set(a.sede_nombre, e);
     });
-
     (ingresosPorSede ?? []).forEach((i) => {
-      const existente = mapa.get(i.sede) ?? { sede: i.sede, clientes: 0, asistencias: 0, ingresos: 0 };
-      existente.ingresos = i.ingresos;
-      mapa.set(i.sede, existente);
+      const e = mapa.get(i.sede) ?? { sede: i.sede, clientes: 0, asistencias: 0, ingresos: 0 };
+      e.ingresos = i.ingresos;
+      mapa.set(i.sede, e);
     });
+    return Array.from(mapa.values()).sort((a, b) => b.ingresos - a.ingresos);
+  }, [clientesPorSede, asistenciasPorSedeData, ingresosPorSede, vistaGlobal]);
 
-    return Array.from(mapa.values());
-  }, [clientesPorSede, asistenciasPorSedeData, ingresosPorSede, esSuperAdmin, sedeActivaId]);
+  const ejeX = { stroke: g.grilla, tick: { fill: g.eje, fontSize: 11 }, tickLine: false } as const;
+  const ejeY = { axisLine: false, tickLine: false, tick: { fill: g.eje, fontSize: 11 }, width: 52 } as const;
+
+  const filtros = (
+    <>
+      {esSuperAdmin && (
+        <select
+          value={sedeFiltro}
+          onChange={(e) => setSedeFiltro(e.target.value)}
+          aria-label="Sede"
+          className="h-11 rounded-xl bg-surface border border-line px-3.5 text-sm font-medium text-ink outline-none sm:w-56 focus:border-primary/70 focus:ring-2 focus:ring-primary/10"
+        >
+          <option value="">Todas las sedes</option>
+          {sedes?.map((s) => (
+            <option key={s.id} value={s.id}>
+              {s.nombre}
+            </option>
+          ))}
+        </select>
+      )}
+      <div className="h-11 flex items-center gap-2 rounded-xl bg-surface border border-line px-3">
+        <CalendarDays className="w-4 h-4 text-muted shrink-0" />
+        <input
+          type="date"
+          value={desde}
+          onChange={(e) => setDesde(e.target.value)}
+          aria-label="Desde"
+          className="bg-transparent text-sm text-ink outline-none"
+        />
+        <span className="text-muted text-xs">a</span>
+        <input
+          type="date"
+          value={hasta}
+          onChange={(e) => setHasta(e.target.value)}
+          aria-label="Hasta"
+          className="bg-transparent text-sm text-ink outline-none"
+        />
+      </div>
+    </>
+  );
 
   return (
-    <div className="space-y-7">
-
-      {/* CABECERA */}
-      <div>
-        <h1 className="text-2xl md:text-[28px] font-bold tracking-tight text-ink">
-          Dashboard
-        </h1>
-        <p className="text-muted text-sm mt-1">
-          {esSuperAdmin
+    <div className="space-y-6">
+      <EncabezadoTablero
+        nombre={sesion?.nombre}
+        subtitulo={
+          esSuperAdmin
             ? sedeActivaId
-              ? `Resumen de la sede seleccionada`
+              ? "Resumen de la sede seleccionada"
               : "Resumen global de todas las sedes"
-            : "Resumen general de tu sede"}
-        </p>
-      </div>
-
-      {/* FILTROS */}
-      <div className="flex flex-col sm:flex-row gap-3">
-
-        {esSuperAdmin && (
-          <select
-            value={sedeFiltro}
-            onChange={(e) => setSedeFiltro(e.target.value)}
-            className="h-[44px] rounded-lg bg-surface border border-line px-4 text-sm text-ink outline-none sm:w-56 focus:border-primary/70 focus:ring-2 focus:ring-primary/10 transition-all"
-          >
-            <option value="" className="bg-surface">Todas las sedes</option>
-            {sedes?.map((s) => (
-              <option key={s.id} value={s.id} className="bg-surface">{s.nombre}</option>
-            ))}
-          </select>
-        )}
-
-        <div className="flex items-center gap-2">
-          <CalendarDays className="w-4 h-4 text-muted shrink-0" />
-          <input
-            type="date"
-            value={desde}
-            onChange={(e) => setDesde(e.target.value)}
-            className="h-[44px] rounded-lg bg-surface border border-line px-3 text-sm text-ink outline-none focus:border-primary/70 focus:ring-2 focus:ring-primary/10 transition-all"
-          />
-          <span className="text-muted text-xs">a</span>
-          <input
-            type="date"
-            value={hasta}
-            onChange={(e) => setHasta(e.target.value)}
-            className="h-[44px] rounded-lg bg-surface border border-line px-3 text-sm text-ink outline-none focus:border-primary/70 focus:ring-2 focus:ring-primary/10 transition-all"
-          />
-        </div>
-
-      </div>
+            : "Resumen general de tu sede"
+        }
+        acciones={filtros}
+      />
 
       {/* KPIs */}
-      <AsyncState
-        isLoading={loadingKpis}
-        isError={errorKpis}
-        emptyMessage="No hay datos para mostrar."
-        errorMessage="No se pudieron cargar los indicadores."
-      >
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <AsyncState isLoading={loadingKpis} isError={errorKpis} errorMessage="No se pudieron cargar los indicadores.">
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
           <KpiCard
             label="Clientes activos"
             value={String(kpis?.clientesActivos ?? 0)}
+            detalle={`de ${kpis?.totalClientes ?? 0} registrados`}
             icon={Users}
-            color="#F15A24"
+            tono="primary"
           />
+          <KpiCard label="Check-ins hoy" value={String(kpis?.checkinsHoy ?? 0)} detalle="Ingresos por QR" icon={ScanLine} tono="info" />
           <KpiCard
-            label="Check-ins hoy"
-            value={String(kpis?.checkinsHoy ?? 0)}
-            icon={ScanLine}
-            color="#3b82f6"
-          />
-          <KpiCard
-            label="Membresías por vencer"
+            label="Por vencer"
             value={String(kpis?.membresiasPorVencer ?? 0)}
+            detalle="En los próximos 7 días"
             icon={CreditCard}
-            color="#f59e0b"
+            tono="warning"
           />
           <KpiCard
-            label="Ingresos del mes"
-            value={formatMoney(kpis?.ingresosMes ?? 0)}
+            label="Ingresos del periodo"
+            value={soles(kpis?.ingresosMes ?? 0)}
+            detalle={`${diaCorto(desde)} – ${diaCorto(hasta)}`}
             icon={TrendingUp}
-            color="#10b981"
+            tono="success"
           />
         </div>
+        {vistaGlobal && kpis && (
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-4">
+            <KpiCard label="Sedes" value={String(kpis.totalSedes)} detalle={`${kpis.sedesActivas} activas`} icon={Building2} tono="violeta" />
+            <KpiCard label="Membresías vigentes" value={String(kpis.membresiasActivas)} detalle="Con acceso habilitado" icon={Activity} tono="success" />
+            <KpiCard label="Membresías vencidas" value={String(kpis.membresiasVencidas)} detalle="Pendientes de renovar" icon={AlertTriangle} tono="danger" />
+          </div>
+        )}
       </AsyncState>
 
-      {/* KPIs extra  */}
-      {esSuperAdmin && !sedeActivaId && kpis && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          <KpiCard
-            label="Total sedes"
-            value={String(kpis.totalSedes ?? 0)}
-            icon={Building2}
-            color="#8b5cf6"
-          />
-          <KpiCard
-            label="Membresías activas"
-            value={String(kpis.membresiasActivas ?? 0)}
-            icon={Activity}
-            color="#10b981"
-          />
-          <KpiCard
-            label="Membresías vencidas"
-            value={String(kpis.membresiasVencidas ?? 0)}
-            icon={CreditCard}
-            color="#ef4444"
-          />
-        </div>
-      )}
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+        <Panel titulo="Ingresos" subtitulo={`${soles(totalIngresos)} cobrados en el periodo`} accion={{ texto: "Ver reportes", to: "/admin/reportes" }}>
+          {datosIngresos.length > 0 ? (
+            <ResponsiveContainer width="100%" height={250}>
+              <BarChart data={datosIngresos} margin={{ top: 8, right: 4, left: 0, bottom: 0 }}>
+                <CartesianGrid vertical={false} stroke={g.grilla} />
+                <XAxis dataKey="fecha" {...ejeX} tickFormatter={diaCorto} minTickGap={16} />
+                <YAxis {...ejeY} tickFormatter={solesCorto} allowDecimals={false} />
+                <Tooltip cursor={{ fill: g.cursor }} content={<TooltipGrafico nombre="cobrado" formato={soles} color={g.ingresos} />} />
+                <Bar dataKey="ingresos" fill={g.ingresos} radius={[4, 4, 0, 0]} maxBarSize={24} />
+              </BarChart>
+            </ResponsiveContainer>
+          ) : (
+            <SinDatos mensaje="Sin ingresos en el periodo seleccionado" icono={BarChart3} />
+          )}
+        </Panel>
 
-      {/* GRÁFICOS */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <Panel titulo="Asistencias" subtitulo={`${totalAsistencias} ingresos registrados en el periodo`}>
+          {datosAsistencias.length > 0 ? (
+            <ResponsiveContainer width="100%" height={250}>
+              <AreaChart data={datosAsistencias} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+                <CartesianGrid vertical={false} stroke={g.grilla} />
+                <XAxis dataKey="fecha" {...ejeX} tickFormatter={diaCorto} minTickGap={16} />
+                <YAxis {...ejeY} allowDecimals={false} />
+                <Tooltip
+                  cursor={{ stroke: g.grilla, strokeWidth: 1 }}
+                  content={<TooltipGrafico nombre="ingresos" formato={(v) => String(v)} color={g.asistencias} />}
+                />
+                <Area
+                  type="monotone"
+                  dataKey="cantidad"
+                  stroke={g.asistencias}
+                  strokeWidth={2}
+                  fill={g.asistencias}
+                  fillOpacity={0.1}
+                  dot={false}
+                  activeDot={{ r: 5, fill: g.asistencias, fillOpacity: 1, stroke: g.superficie, strokeWidth: 2 }}
+                />
+              </AreaChart>
+            </ResponsiveContainer>
+          ) : (
+            <SinDatos mensaje="Sin asistencias en el periodo seleccionado" icono={IconoLinea} />
+          )}
+        </Panel>
 
-        {/* Ingresos por periodo */}
-        <div className="bg-surface rounded-[14px] border border-line overflow-hidden shadow-[0_8px_25px_rgba(0,0,0,0.12)]">
-          <div className="px-5 py-4 border-b border-line">
-            <p className="text-sm font-semibold text-ink">Ingresos por periodo</p>
-          </div>
-          <div className="px-5 py-5">
-            {datosIngresos.length > 0 ? (
-              <ResponsiveContainer width="100%" height={250}>
-                <BarChart data={datosIngresos}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#2A3036" />
-                  <XAxis dataKey="fecha" stroke="#8F99A3" fontSize={11} tickFormatter={(v) => v.slice(5)} />
-                  <YAxis stroke="#8F99A3" fontSize={11} />
-                  <Tooltip
-                    contentStyle={{ backgroundColor: "#1A1E22", border: "1px solid #30363d", borderRadius: 8, color: "#fff" }}
-                    formatter={(value: number) => [formatMoney(value), "Ingresos"]}
-                    labelFormatter={(label) => `Fecha: ${label}`}
-                  />
-                  <Bar dataKey="ingresos" fill="#F15A24" radius={[4, 4, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            ) : (
-              <GraficoVacio mensaje="Sin ingresos en el periodo seleccionado" />
-            )}
-          </div>
-        </div>
-
-        {/* Asistencias por periodo */}
-        <div className="bg-surface rounded-[14px] border border-line overflow-hidden shadow-[0_8px_25px_rgba(0,0,0,0.12)]">
-          <div className="px-5 py-4 border-b border-line">
-            <p className="text-sm font-semibold text-ink">Asistencias por periodo</p>
-          </div>
-          <div className="px-5 py-5">
-            {datosAsistencias.length > 0 ? (
-              <ResponsiveContainer width="100%" height={250}>
-                <LineChart data={datosAsistencias}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#2A3036" />
-                  <XAxis dataKey="fecha" stroke="#8F99A3" fontSize={11} tickFormatter={(v) => v.slice(5)} />
-                  <YAxis stroke="#8F99A3" fontSize={11} />
-                  <Tooltip
-                    contentStyle={{ backgroundColor: "#1A1E22", border: "1px solid #30363d", borderRadius: 8, color: "#fff" }}
-                    formatter={(value: number) => [value, "Asistencias"]}
-                    labelFormatter={(label) => `Fecha: ${label}`}
-                  />
-                  <Line type="monotone" dataKey="cantidad" stroke="#3b82f6" strokeWidth={2} dot={{ fill: "#3b82f6", r: 3 }} />
-                </LineChart>
-              </ResponsiveContainer>
-            ) : (
-              <GraficoVacio mensaje="Sin asistencias en el periodo seleccionado" />
-            )}
-          </div>
-        </div>
-
-        {/* Clientes por sede */}
-        {esSuperAdmin && !sedeActivaId && (
-          <div className="bg-surface rounded-[14px] border border-line overflow-hidden shadow-[0_8px_25px_rgba(0,0,0,0.12)]">
-            <div className="px-5 py-4 border-b border-line">
-              <p className="text-sm font-semibold text-ink">Clientes por sede</p>
-            </div>
-            <div className="px-5 py-5">
-              {clientesPorSede && clientesPorSede.length > 0 ? (
-                <ResponsiveContainer width="100%" height={250}>
-                  <BarChart data={clientesPorSede}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#2A3036" />
-                    <XAxis dataKey="sede" stroke="#8F99A3" fontSize={11} />
-                    <YAxis stroke="#8F99A3" fontSize={11} />
-                    <Tooltip
-                      contentStyle={{ backgroundColor: "#1A1E22", border: "1px solid #30363d", borderRadius: 8, color: "#fff" }}
-                      formatter={(value: number) => [value, "Clientes"]}
-                    />
-                    <Bar dataKey="cantidad" fill="#F15A24" radius={[4, 4, 0, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
-              ) : (
-                <GraficoVacio mensaje="Sin datos de clientes por sede" />
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* Membresías por estado */}
-        <div className="bg-surface rounded-[14px] border border-line overflow-hidden shadow-[0_8px_25px_rgba(0,0,0,0.12)]">
-          <div className="px-5 py-4 border-b border-line">
-            <p className="text-sm font-semibold text-ink">Membresías por estado</p>
-          </div>
-          <div className="px-5 py-5">
-            {membresiasPorEstado && membresiasPorEstado.length > 0 ? (
-              <ResponsiveContainer width="100%" height={250}>
-                <PieChart>
-                  <Pie
-                    data={membresiasPorEstado}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={60}
-                    outerRadius={100}
-                    dataKey="cantidad"
-                    nameKey="estado"
-                    label={({ estado, percent }) =>
-                      `${estado} ${(percent * 100).toFixed(0)}%`
-                    }
-                  >
-                    {membresiasPorEstado.map((_, index) => (
-                      <Cell key={index} fill={COLORES[index % COLORES.length]} />
-                    ))}
-                  </Pie>
-                  <Tooltip
-                    contentStyle={{ backgroundColor: "#1A1E22", border: "1px solid #30363d", borderRadius: 8, color: "#fff" }}
-                    formatter={(value: number) => [value, "Membresías"]}
-                  />
-                  <Legend />
-                </PieChart>
-              </ResponsiveContainer>
-            ) : (
-              <GraficoVacio mensaje="Sin membresías registradas" />
-            )}
-          </div>
-        </div>
-
-        {/* Comparación de sedes */}
-        {esSuperAdmin && !sedeActivaId && datosComparacionSedes.length > 0 && (
-          <div className="bg-surface rounded-[14px] border border-line overflow-hidden shadow-[0_8px_25px_rgba(0,0,0,0.12)] lg:col-span-2">
-            <div className="px-5 py-4 border-b border-line">
-              <p className="text-sm font-semibold text-ink">Comparación de sedes</p>
-            </div>
-            <div className="px-5 py-5">
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead className="text-muted text-xs uppercase">
-                    <tr>
-                      <th className="text-left px-4 py-2">Sede</th>
-                      <th className="text-right px-4 py-2">Clientes</th>
-                      <th className="text-right px-4 py-2">Asistencias</th>
-                      <th className="text-right px-4 py-2">Ingresos</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {datosComparacionSedes.map((fila) => (
-                      <tr key={fila.sede} className="border-t border-line">
-                        <td className="px-4 py-3 text-ink font-medium">{fila.sede}</td>
-                        <td className="px-4 py-3 text-right">{fila.clientes}</td>
-                        <td className="px-4 py-3 text-right">{fila.asistencias}</td>
-                        <td className="px-4 py-3 text-right">{formatMoney(fila.ingresos)}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+        {/* CLIENTES POR SEDE: ranking con participación de cada sede */}
+        {vistaGlobal && (
+          <Panel titulo="Clientes por sede" subtitulo="Participación de cada sede en el total de clientes">
+            {sedesOrdenadas.length > 0 ? (
+              <div className="flex flex-col h-full">
+                <ul className="space-y-1">
+                  {sedesOrdenadas.map((s, i) => {
+                    const pct = totalClientesSedes ? Math.round((s.cantidad / totalClientesSedes) * 100) : 0;
+                    return (
+                      <li key={s.sede} className="flex items-center gap-3.5 rounded-xl px-2 py-2.5 -mx-2 hover:bg-ink/[0.03]">
+                        <span
+                          className={`w-8 h-8 rounded-lg grid place-items-center text-xs font-bold shrink-0 ${
+                            i === 0 && s.cantidad > 0 ? "bg-primary text-white" : "bg-ink/5 text-ink-2"
+                          }`}
+                        >
+                          {i + 1}
+                        </span>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-baseline justify-between gap-3">
+                            <span className={`text-sm truncate ${s.cantidad ? "text-ink font-medium" : "text-muted"}`}>{s.sede}</span>
+                            <span className="text-sm tabular-nums shrink-0">
+                              <span className="font-bold text-ink">{s.cantidad}</span>
+                              <span className="text-muted text-xs ml-1.5">{pct}%</span>
+                            </span>
+                          </div>
+                          <div className="h-1.5 rounded-full bg-ink/5 mt-2">
+                            {s.cantidad > 0 && (
+                              <div
+                                className="h-1.5 rounded-full bg-primary transition-[width] duration-500"
+                                style={{ width: `${Math.max(4, (s.cantidad / maxClientesSede) * 100)}%` }}
+                              />
+                            )}
+                          </div>
+                        </div>
+                      </li>
+                    );
+                  })}
+                </ul>
+                <p className="mt-auto pt-4 border-t border-line text-xs text-muted flex items-center gap-1.5">
+                  <Users className="w-3.5 h-3.5" />
+                  <span>
+                    <span className="font-semibold text-ink">{totalClientesSedes}</span> clientes en {sedesOrdenadas.length} sedes
+                  </span>
+                </p>
               </div>
-            </div>
-          </div>
+            ) : (
+              <SinDatos mensaje="Sin datos de clientes por sede" icono={Building2} />
+            )}
+          </Panel>
         )}
 
-      </div>
+        <Panel titulo="Membresías" subtitulo="Estado actual de las membresías" accion={{ texto: "Gestionar", to: "/admin/membresias" }}>
+          <EstadoMembresias
+            vigentes={kpis?.membresiasActivas ?? 0}
+            porVencer={kpis?.membresiasPorVencer ?? 0}
+            vencidas={kpis?.membresiasVencidas ?? 0}
+            canceladas={canceladas}
+          />
+        </Panel>
 
+        {/* COMPARACIÓN DE SEDES */}
+        {vistaGlobal && datosComparacionSedes.length > 0 && (
+          <Panel titulo="Comparación de sedes" subtitulo="Clientes, asistencias e ingresos del periodo" className="xl:col-span-2" sinRelleno>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="text-muted text-[11px] uppercase tracking-wider bg-background/70 border-y border-line">
+                    <th className="text-left font-semibold px-5 py-3">Sede</th>
+                    <th className="text-right font-semibold px-5 py-3">Clientes</th>
+                    <th className="text-right font-semibold px-5 py-3">Asistencias</th>
+                    <th className="text-right font-semibold px-5 py-3">Ingresos</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {datosComparacionSedes.map((fila) => (
+                    <tr key={fila.sede} className="border-b border-line last:border-b-0 hover:bg-ink/[0.03]">
+                      <td className="px-5 py-3.5">
+                        <span className="inline-flex items-center gap-2.5 text-ink font-medium">
+                          <span className="w-7 h-7 rounded-lg bg-ink/5 text-ink-2 grid place-items-center">
+                            <Building2 className="w-3.5 h-3.5" />
+                          </span>
+                          {fila.sede}
+                        </span>
+                      </td>
+                      <td className="px-5 py-3.5 text-right text-ink-2 tabular-nums">{fila.clientes}</td>
+                      <td className="px-5 py-3.5 text-right text-ink-2 tabular-nums">{fila.asistencias}</td>
+                      <td className="px-5 py-3.5 text-right text-ink font-semibold tabular-nums">{soles(fila.ingresos)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </Panel>
+        )}
+      </div>
     </div>
   );
 }

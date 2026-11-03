@@ -195,7 +195,7 @@ export default function AdminClientes() {
                 {/* Cabecera */}
                 <div className="bg-primary px-5 py-4 flex items-center justify-between gap-3">
                   <div className="flex items-center gap-3 min-w-0">
-                    <div className="w-10 h-10 rounded-full bg-white/15 flex items-center justify-center shrink-0 text-ink font-semibold">
+                    <div className="w-10 h-10 rounded-full bg-ink/10 flex items-center justify-center shrink-0 text-ink font-semibold">
                       {clienteSeleccionado.nombre.charAt(0).toUpperCase()}
                     </div>
                     <div className="min-w-0">
@@ -263,7 +263,7 @@ export default function AdminClientes() {
 
                       <button
                         onClick={() => abrirEdicion(clienteSeleccionado)}
-                        className="mt-5 w-full inline-flex items-center justify-center gap-2 bg-primary text-ink font-semibold rounded-lg h-11 text-sm hover:bg-primary-dark transition-colors"
+                        className="mt-5 w-full inline-flex items-center justify-center gap-2 bg-primary text-white font-semibold rounded-lg h-11 text-sm hover:bg-primary-dark transition-colors"
                       >
                         <Pencil className="w-4 h-4" />
                         Editar información
@@ -341,7 +341,7 @@ export default function AdminClientes() {
                           <button
                             type="submit"
                             disabled={editarMutacion.isPending}
-                            className="flex-1 h-11 bg-primary text-ink font-semibold rounded-lg text-sm hover:bg-primary-dark transition-colors disabled:opacity-50"
+                            className="flex-1 h-11 bg-primary text-white font-semibold rounded-lg text-sm hover:bg-primary-dark transition-colors disabled:opacity-50"
                           >
                             {editarMutacion.isPending ? "Guardando..." : "Guardar cambios"}
                           </button>
@@ -349,7 +349,7 @@ export default function AdminClientes() {
                             type="button"
                             onClick={() => setEditando(false)}
                             disabled={editarMutacion.isPending}
-                            className="h-11 px-4 rounded-lg border border-line text-ink-2 text-sm hover:bg-white/5 disabled:opacity-50"
+                            className="h-11 px-4 rounded-lg border border-line text-ink-2 text-sm hover:bg-ink/5 disabled:opacity-50"
                           >
                             Cancelar
                           </button>

@@ -1,4 +1,4 @@
-﻿import { useState } from "react";
+import { useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { CheckCircle2, XCircle, ScanLine, PauseCircle } from "lucide-react";
 import { supabase } from "@/lib/supabaseClient";
@@ -256,7 +256,7 @@ export default function ControlAcceso() {
                 <button
                   onClick={handleBuscarManual}
                   disabled={!codigoManual.trim() || mutacion.isPending}
-                  className="h-11 bg-primary text-ink font-semibold rounded-lg px-6 text-sm hover:bg-primary-dark transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                  className="h-11 bg-primary text-white font-semibold rounded-lg px-6 text-sm hover:bg-primary-dark transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                 >
                   Validar
                 </button>
@@ -284,7 +284,7 @@ export default function ControlAcceso() {
           </div>
         ) : (
           <table className="w-full text-sm">
-            <thead className="bg-black/20 text-muted text-xs uppercase tracking-wide">
+            <thead className="bg-background/70 text-muted text-xs uppercase tracking-wide">
               <tr>
                 <th className="text-left px-5 py-3 font-semibold">Cliente</th>
                 <th className="text-right px-5 py-3 font-semibold">Hora</th>
@@ -292,7 +292,7 @@ export default function ControlAcceso() {
             </thead>
             <tbody>
               {historial.map((a) => (
-                <tr key={a.id} className="border-t border-line hover:bg-white/[0.02] transition-colors">
+                <tr key={a.id} className="border-t border-line hover:bg-ink/[0.03] transition-colors">
                   <td className="px-5 py-3.5">
                     <div className="flex items-center gap-3 min-w-0">
                       <div className="w-8 h-8 rounded-full bg-primary/10 border border-primary/10 flex items-center justify-center shrink-0">

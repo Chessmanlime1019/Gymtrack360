@@ -1,8 +1,9 @@
-﻿import { GlobalSearch } from "./GlobalSearch";
+import { GlobalSearch } from "./GlobalSearch";
 import { QuickAccessMenu } from "./QuickAccessMenu";
 import { NotificationsMenu } from "./NotificationsMenu";
 import { HelpButton } from "./HelpButton";
 import { ProfileMenu } from "./ProfileMenu";
+import { TemaMenu } from "./TemaMenu";
 
 export function TopBar() {
   return (
@@ -32,6 +33,8 @@ export function TopBar() {
 
       <div className="flex items-center gap-1 sm:gap-2 ml-auto shrink-0">
         <QuickAccessMenu />
+
+        <TemaMenu />
 
         <NotificationsMenu />
 

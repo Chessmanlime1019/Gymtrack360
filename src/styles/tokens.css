@@ -1,41 +1,72 @@
-/* GYMTRACK 360 - tokens.css (Paso 1: color y tipografia)
-   Colores muestreados de la imagen de referencia (dashboard Super Admin de Cascada Gym).
+/* GYMTRACK 360 - tokens.css (color y tipografia)
 
-   Guardar como src/styles/tokens.css e importarlo en la PRIMERA linea de src/index.css:
-        @import "./styles/tokens.css";
-   Los mismos colores estan en tailwind.config.ts: si cambias uno, cambia el otro.
+   Los colores viven aqui como canales RGB ("232 87 12") y tailwind.config.ts los
+   usa como rgb(var(--c-...) / alfa), asi siguen funcionando clases como
+   bg-primary/20. Hay dos juegos: claro (:root) y oscuro (.dark en <html>).
+   El modo claro esta calibrado para contraste AA (4.5:1) sobre blanco.
 */
 
-@import "@fontsource/archivo-black/400.css";
-@import "@fontsource-variable/inter/wght.css";
+@import "@fontsource-variable/plus-jakarta-sans/wght.css";
 
+/* ---------------------------------------------------------------- Claro */
 :root {
+  color-scheme: light;
+
+  --c-bg: 245 247 250;           /* #F5F7FA fondo de pagina */
+  --c-bar: 255 255 255;          /* sidebar, barra superior, navegacion inferior */
+  --c-surface: 255 255 255;      /* tarjetas y paneles */
+  --c-surface-hover: 241 244 248;
+  --c-line: 230 234 240;         /* bordes y divisores */
+  --c-line-strong: 203 211 221;
+
+  --c-primary: 232 87 12;        /* #E8570C: naranja de marca (igual que en oscuro) */
+  --c-primary-dark: 201 74 8;    /* hover */
+  --c-primary-press: 175 64 7;
+
+  --c-ink: 15 23 42;             /* #0F172A texto principal */
+  --c-ink-2: 51 65 85;           /* texto secundario */
+  --c-muted: 100 112 128;        /* etiquetas y ayudas, 4.9:1 */
+
+  --c-success: 21 128 61;
+  --c-warning: 217 119 6;        /* #D97706 ambar (siempre con icono o etiqueta) */
+  --c-danger: 200 30 30;         /* #C81E1E */
+  --c-info: 37 99 235;
+}
+
+/* ---------------------------------------------------------------- Oscuro
+   .zona-oscura aplica la paleta oscura solo a un bloque (el menu lateral),
+   asi se ve oscuro tambien en modo claro. */
+:root.dark,
+.zona-oscura {
   color-scheme: dark;
 
-  /* Superficies (de mas oscura a mas clara) */
-  --gt-bg: #060a0e;          /* fondo de pagina */
-  --gt-bar: #0b0f13;         /* sidebar, barra superior, navegacion inferior */
-  --gt-card: #12181e;        /* tarjetas y paneles */
-  --gt-card-hover: #171f27;
-  --gt-line: #1e2329;        /* bordes y divisores */
+  --c-bg: 6 10 14;               /* #060A0E */
+  --c-bar: 11 15 19;
+  --c-surface: 18 24 30;
+  --c-surface-hover: 23 31 39;
+  --c-line: 30 35 41;
+  --c-line-strong: 42 48 54;
 
-  /* Marca */
-  --gt-primary: #e8570c;
-  --gt-primary-hover: #f26a1b;
-  --gt-primary-press: #c94a08;
+  --c-primary: 232 87 12;        /* #E8570C */
+  --c-primary-dark: 242 106 27;
+  --c-primary-press: 201 74 8;
+
+  --c-ink: 255 255 255;
+  --c-ink-2: 201 209 217;
+  --c-muted: 143 153 163;
+
+  --c-success: 34 197 94;
+  --c-warning: 226 167 46;
+  --c-danger: 247 94 83;
+  --c-info: 79 130 245;
+}
+
+:root {
+  /* Alias para el CSS que no pasa por Tailwind */
+  --gt-bg: rgb(var(--c-bg));
+  --gt-ink: rgb(var(--c-ink));
+  --gt-primary: rgb(var(--c-primary));
   --gt-primary-soft: color-mix(in srgb, var(--gt-primary) 16%, transparent);
-  --gt-on-primary: #ffffff;  /* usar solo en texto de 14px+ en Archivo Black */
-
-  /* Texto */
-  --gt-ink: #ffffff;
-  --gt-ink-2: #c9d1d9;       /* texto secundario */
-  --gt-muted: #8f99a3;       /* etiquetas y ayudas */
-
-  /* Estados (success es estimado; el resto sale de la imagen) */
-  --gt-success: #22c55e;
-  --gt-warning: #e2a72e;
-  --gt-danger: #f75e53;
-  --gt-info: #4f82f5;
 
   /* Formas (estimadas de la imagen) */
   --gt-radius-card: 16px;
@@ -43,8 +74,8 @@
   --gt-radius-pill: 999px;
 
   /* Tipografia */
-  --gt-font-display: "Archivo Black", "Arial Black", Impact, sans-serif;
-  --gt-font-body: "Inter Variable", "Inter", system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  --gt-font-body: "Plus Jakarta Sans Variable", "Plus Jakarta Sans", system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  --gt-font-display: var(--gt-font-body);
 
   --gt-fs-xs: 12px;
   --gt-fs-sm: 13px;
@@ -71,30 +102,25 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-/* Archivo Black solo existe en un peso: se desactiva el negrita falso.
-   El prefijo :root sube la especificidad para ganarle al reset de Tailwind.
-   OJO: ya NO se aplica a todos los <button> ni [role="button"] -- eso hacia
-   que listas y botones normales (ej. el selector de sedes) se vieran muy
-   gruesos y ocuparan demasiado espacio. Ahora Archivo Black es solo para
-   titulos (h1-h4) y para donde se agregue la clase .font-display a mano
-   (ej. un boton grande de portada). Los botones normales usan Inter. */
+/* Titulos: misma familia que el texto, en negrita y con el espaciado algo
+   mas cerrado para un aspecto sobrio y profesional. */
 .font-display,
 :root :is(h1, h2, h3, h4) {
   font-family: var(--gt-font-display);
-  font-weight: 400;
-  font-synthesis: none;
-  letter-spacing: -0.01em;
+  font-weight: 700;
+  letter-spacing: -0.02em;
 }
 
 :root :is(h1, h2, h3, h4) {
-  line-height: 1.15;
+  line-height: 1.2;
 }
 
+/* Numeros grandes de las tarjetas */
 .gt-kpi {
   font-family: var(--gt-font-display);
   font-size: var(--gt-fs-kpi);
-  font-weight: 400;
-  font-synthesis: none;
+  font-weight: 700;
+  letter-spacing: -0.02em;
   line-height: 1;
 }
 
@@ -103,4 +129,10 @@ body {
   :root :is(input, select, textarea) {
     font-size: 16px;
   }
+}
+
+/* Modo claro: las tarjetas flotan con una sombra suave en vez de depender
+   solo del borde (en oscuro la sombra no se nota y se omite). */
+:root:not(.dark) :is(.rounded-xl, .rounded-2xl, .rounded-3xl, .rounded-\[14px\]).bg-surface:not(.zona-oscura *) {
+  box-shadow: 0 1px 2px rgb(16 24 40 / 0.04), 0 4px 12px -2px rgb(16 24 40 / 0.06);
 }

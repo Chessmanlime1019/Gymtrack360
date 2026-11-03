@@ -144,7 +144,7 @@ export default function AdminMembresias() {
         <button
           onClick={abrirModalAsignar}
           disabled={!sedeActiva}
-          className="shrink-0 inline-flex items-center justify-center gap-2 bg-primary text-ink font-semibold rounded-lg h-11 px-4 text-sm hover:bg-primary-dark transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+          className="shrink-0 inline-flex items-center justify-center gap-2 bg-primary text-white font-semibold rounded-lg h-11 px-4 text-sm hover:bg-primary-dark transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
         >
           <Plus className="w-4 h-4" />
           Nueva membresía
@@ -169,8 +169,8 @@ export default function AdminMembresias() {
                   onClick={() => setSedeActiva(s.id)}
                   className={`flex items-center gap-2.5 px-4 py-3 text-sm text-left whitespace-nowrap shrink-0 lg:shrink lg:whitespace-normal border-b border-line last:border-b-0 transition-colors ${
                     sedeActiva === s.id
-                      ? "bg-primary text-ink font-semibold"
-                      : "text-ink-2 hover:bg-white/5"
+                      ? "bg-primary text-white font-semibold"
+                      : "text-ink-2 hover:bg-ink/5"
                   }`}
                 >
                   <Building2 className="w-4 h-4 shrink-0" />
@@ -268,7 +268,7 @@ export default function AdminMembresias() {
           <button
             type="submit"
             disabled={asignarMutacion.isPending}
-            className="w-full h-12 bg-primary text-ink font-semibold rounded-lg text-sm hover:bg-primary-dark transition-colors disabled:opacity-50"
+            className="w-full h-12 bg-primary text-white font-semibold rounded-lg text-sm hover:bg-primary-dark transition-colors disabled:opacity-50"
           >
             {asignarMutacion.isPending ? "Asignando..." : "Asignar membresía"}
           </button>
@@ -296,7 +296,7 @@ export default function AdminMembresias() {
               <button
                 type="button"
                 onClick={() => setMembresiaCancelando(null)}
-                className="rounded-lg border border-line px-4 py-2 text-sm text-ink-2 hover:bg-white/5"
+                className="rounded-lg border border-line px-4 py-2 text-sm text-ink-2 hover:bg-ink/5"
               >
                 Volver
               </button>
@@ -407,7 +407,7 @@ function ListaYPanelMembresias({
           ) : (
             <div className="bg-surface rounded-xl border border-line overflow-hidden">
               <div className="bg-primary px-5 py-4 flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-white/15 flex items-center justify-center shrink-0">
+                <div className="w-10 h-10 rounded-full bg-ink/10 flex items-center justify-center shrink-0">
                   <UserRound className="w-5 h-5 text-ink" />
                 </div>
                 <div className="min-w-0">
@@ -440,7 +440,7 @@ function ListaYPanelMembresias({
                   <button
                     onClick={() => onRenovar(seleccionada)}
                     disabled={renovarPendiente || seleccionada.estado === "cancelada"}
-                    className="flex-1 inline-flex items-center justify-center gap-2 h-11 bg-primary text-ink font-semibold rounded-lg text-sm hover:bg-primary-dark transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                    className="flex-1 inline-flex items-center justify-center gap-2 h-11 bg-primary text-white font-semibold rounded-lg text-sm hover:bg-primary-dark transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                   >
                     <RotateCw className="w-4 h-4" />
                     Renovar
@@ -500,7 +500,7 @@ function TablaMembresias({
         {/* ---------- Tabla (escritorio) ---------- */}
         <div className="hidden md:block bg-surface rounded-xl border border-line overflow-hidden">
           <table className="w-full text-sm">
-            <thead className="bg-black/20 text-muted text-xs uppercase tracking-wide">
+            <thead className="bg-background/70 text-muted text-xs uppercase tracking-wide">
               <tr>
                 <th className="text-left px-5 py-4 font-semibold">Cliente</th>
                 <th className="text-left px-5 py-4 font-semibold">Plan</th>
@@ -511,7 +511,7 @@ function TablaMembresias({
             </thead>
             <tbody>
               {membresias?.map((m) => (
-                <tr key={m.id} className="border-t border-line hover:bg-white/[0.02] transition-colors">
+                <tr key={m.id} className="border-t border-line hover:bg-ink/[0.03] transition-colors">
                   <td className="px-5 py-4">
                     <div className="flex items-center gap-3">
                       <div className="w-9 h-9 rounded-full bg-primary/10 border border-primary/15 flex items-center justify-center shrink-0">

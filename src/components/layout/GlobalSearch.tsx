@@ -98,7 +98,7 @@ export function GlobalSearch() {
           left-3.5
           top-1/2
           -translate-y-1/2
-          text-[#858e97]
+          text-muted
         "
       />
 
@@ -119,21 +119,21 @@ export function GlobalSearch() {
           w-full
           h-[40px]
           rounded-lg
-          bg-[#191d21]
+          bg-surface
           border
-          border-[#30363d]
+          border-line
           pl-10
           pr-8
           py-2
           text-sm
-          text-white
-          placeholder:text-[#858e97]
+          text-ink
+          placeholder:text-muted
           outline-none
           transition-all
-          focus:border-[#f15a24]/70
+          focus:border-primary/70
           focus:ring-2
-          focus:ring-[#f15a24]/10
-          hover:border-[#3a424a]
+          focus:ring-primary/10
+          hover:border-line-strong
           disabled:opacity-40
           disabled:cursor-not-allowed
         "
@@ -148,7 +148,7 @@ export function GlobalSearch() {
             right-3
             top-1/2
             -translate-y-1/2
-            text-[#f15a24]
+            text-primary
             animate-spin
           "
         />
@@ -163,9 +163,9 @@ export function GlobalSearch() {
               left-0
               right-0
               mt-2
-              bg-[#1b2024]
+              bg-surface
               border
-              border-[#30363d]
+              border-line
               rounded-xl
               shadow-2xl
               z-50
@@ -176,7 +176,7 @@ export function GlobalSearch() {
           >
 
             {resultados.length === 0 && !cargando ? (
-              <p className="px-4 py-6 text-center text-[#89929b] text-sm">
+              <p className="px-4 py-6 text-center text-muted text-sm">
                 Sin resultados para "{termino}"
               </p>
             ) : (
@@ -196,18 +196,18 @@ export function GlobalSearch() {
                     text-left
                     px-4
                     py-2.5
-                    hover:bg-white/[0.04]
+                    hover:bg-ink/5
                     transition-colors
                     border-b
-                    border-[#2a3036]
+                    border-line
                     last:border-0
                   "
                 >
-                  <p className="text-white text-sm">
+                  <p className="text-ink text-sm">
                     {r.titulo}
                   </p>
 
-                  <p className="text-[#89929b] text-xs mt-0.5">
+                  <p className="text-muted text-xs mt-0.5">
                     {r.subtitulo}
                   </p>
                 </button>

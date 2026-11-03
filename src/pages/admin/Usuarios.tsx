@@ -213,7 +213,7 @@ export default function AdminUsuarios() {
 
         <button
           onClick={abrirCreacion}
-          className="inline-flex items-center justify-center gap-2 bg-primary text-ink font-semibold rounded-lg px-4 py-2.5 text-sm hover:bg-primary-dark transition-colors shrink-0"
+          className="inline-flex items-center justify-center gap-2 bg-primary text-white font-semibold rounded-lg px-4 py-2.5 text-sm hover:bg-primary-dark transition-colors shrink-0"
         >
           <Plus className="w-4 h-4" />
           Nuevo usuario
@@ -252,15 +252,15 @@ export default function AdminUsuarios() {
                   onClick={() => setSedeActiva(s.id)}
                   className={`flex items-center gap-2.5 px-4 py-3 text-sm text-left whitespace-nowrap shrink-0 lg:shrink lg:whitespace-normal border-b border-line last:border-b-0 transition-colors ${
                     sedeActiva === s.id
-                      ? "bg-primary text-ink font-semibold"
-                      : "text-ink-2 hover:bg-white/5"
+                      ? "bg-primary text-white font-semibold"
+                      : "text-ink-2 hover:bg-ink/5"
                   }`}
                 >
                   <Building2 className="w-4 h-4 shrink-0" />
                   <span className="flex-1 truncate">{s.nombre}</span>
                   <span
                     className={`text-xs rounded-full px-2 py-0.5 ${
-                      sedeActiva === s.id ? "bg-white/15" : "bg-white/5 text-muted"
+                      sedeActiva === s.id ? "bg-ink/10" : "bg-ink/5 text-muted"
                     }`}
                   >
                     {cantidadPorSede.get(s.id) ?? 0}
@@ -311,7 +311,7 @@ export default function AdminUsuarios() {
               {/* ---------- Tabla (escritorio) ---------- */}
               <div className="hidden md:block bg-surface rounded-xl border border-line overflow-hidden">
                 <table className="w-full text-sm">
-                  <thead className="bg-black/20 text-muted text-xs uppercase tracking-wide">
+                  <thead className="bg-background/70 text-muted text-xs uppercase tracking-wide">
                     <tr>
                       <th className="text-left px-4 py-3 font-semibold">Nombre</th>
                       <th className="text-left px-4 py-3 font-semibold">Rol</th>
@@ -348,7 +348,7 @@ export default function AdminUsuarios() {
                             <button
                               onClick={() => abrirEdicion(u)}
                               aria-label="Editar usuario"
-                              className="p-1.5 rounded-md text-muted hover:bg-white/5 hover:text-primary transition-colors"
+                              className="p-1.5 rounded-md text-muted hover:bg-ink/5 hover:text-primary transition-colors"
                             >
                               <Pencil className="w-4 h-4" />
                             </button>
@@ -394,7 +394,7 @@ export default function AdminUsuarios() {
                         <button
                           onClick={() => abrirEdicion(u)}
                           aria-label="Editar usuario"
-                          className="p-1.5 rounded-md text-muted hover:bg-white/5 hover:text-primary transition-colors"
+                          className="p-1.5 rounded-md text-muted hover:bg-ink/5 hover:text-primary transition-colors"
                         >
                           <Pencil className="w-4 h-4" />
                         </button>
@@ -529,14 +529,14 @@ export default function AdminUsuarios() {
             <button
               type="button"
               onClick={() => setUsuarioEditando(null)}
-              className="rounded-lg border border-line px-4 py-2 text-sm text-ink-2 hover:bg-white/5"
+              className="rounded-lg border border-line px-4 py-2 text-sm text-ink-2 hover:bg-ink/5"
             >
               Cancelar
             </button>
             <button
               type="submit"
               disabled={guardarMutacion.isPending}
-              className="bg-primary text-ink font-semibold rounded-lg px-4 py-2 text-sm disabled:opacity-50"
+              className="bg-primary text-white font-semibold rounded-lg px-4 py-2 text-sm disabled:opacity-50"
             >
               {guardarMutacion.isPending ? "Guardando..." : "Guardar cambios"}
             </button>
@@ -576,7 +576,7 @@ export default function AdminUsuarios() {
               <button
                 type="button"
                 onClick={() => setUsuarioCambiandoEstado(null)}
-                className="rounded-lg border border-line px-4 py-2 text-sm text-ink-2 hover:bg-white/5"
+                className="rounded-lg border border-line px-4 py-2 text-sm text-ink-2 hover:bg-ink/5"
               >
                 Cancelar
               </button>
@@ -722,14 +722,14 @@ export default function AdminUsuarios() {
             <button
               type="button"
               onClick={() => setCreandoUsuario(false)}
-              className="rounded-lg border border-line px-4 py-2 text-sm text-ink-2 hover:bg-white/5"
+              className="rounded-lg border border-line px-4 py-2 text-sm text-ink-2 hover:bg-ink/5"
             >
               Cancelar
             </button>
             <button
               type="submit"
               disabled={crearMutacion.isPending}
-              className="bg-primary text-ink font-semibold rounded-lg px-4 py-2 text-sm disabled:opacity-50"
+              className="bg-primary text-white font-semibold rounded-lg px-4 py-2 text-sm disabled:opacity-50"
             >
               {crearMutacion.isPending ? "Creando..." : "Crear usuario"}
             </button>
@@ -858,7 +858,7 @@ function ListaYPanelUsuarios({
           ) : (
             <div className="bg-surface rounded-xl border border-line overflow-hidden">
               <div className="bg-primary px-5 py-4 flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-white/15 flex items-center justify-center shrink-0 text-ink font-semibold">
+                <div className="w-10 h-10 rounded-full bg-ink/10 flex items-center justify-center shrink-0 text-ink font-semibold">
                   {seleccionada.nombre.charAt(0).toUpperCase()}
                 </div>
                 <div className="min-w-0">
@@ -903,7 +903,7 @@ function ListaYPanelUsuarios({
                     <div className="flex gap-2 mt-5">
                       <button
                         onClick={() => onAbrirEdicion(seleccionada)}
-                        className="flex-1 inline-flex items-center justify-center gap-2 h-11 bg-primary text-ink font-semibold rounded-lg text-sm hover:bg-primary-dark transition-colors"
+                        className="flex-1 inline-flex items-center justify-center gap-2 h-11 bg-primary text-white font-semibold rounded-lg text-sm hover:bg-primary-dark transition-colors"
                       >
                         <Pencil className="w-4 h-4" />
                         Editar información
@@ -974,7 +974,7 @@ function ListaYPanelUsuarios({
                         <button
                           type="submit"
                           disabled={guardando}
-                          className="flex-1 h-11 bg-primary text-ink font-semibold rounded-lg text-sm hover:bg-primary-dark transition-colors disabled:opacity-50"
+                          className="flex-1 h-11 bg-primary text-white font-semibold rounded-lg text-sm hover:bg-primary-dark transition-colors disabled:opacity-50"
                         >
                           {guardando ? "Guardando..." : "Guardar cambios"}
                         </button>
@@ -982,7 +982,7 @@ function ListaYPanelUsuarios({
                           type="button"
                           onClick={onCerrarEdicion}
                           disabled={guardando}
-                          className="h-11 px-4 rounded-lg border border-line text-ink-2 text-sm hover:bg-white/5 disabled:opacity-50"
+                          className="h-11 px-4 rounded-lg border border-line text-ink-2 text-sm hover:bg-ink/5 disabled:opacity-50"
                         >
                           Cancelar
                         </button>

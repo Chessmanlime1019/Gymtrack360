@@ -268,7 +268,7 @@ export default function AdminReportes() {
           <button
             onClick={exportarPDF}
             disabled={!datos || datos.length === 0}
-            className="bg-surface border border-line text-ink font-semibold rounded-lg px-3 py-2 text-sm inline-flex items-center gap-1.5 hover:bg-white/5 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            className="bg-surface border border-line text-ink font-semibold rounded-lg px-3 py-2 text-sm inline-flex items-center gap-1.5 hover:bg-ink/5 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
           >
             <FileText className="w-4 h-4" />
             <span className="hidden sm:inline">Exportar PDF</span>
@@ -276,7 +276,7 @@ export default function AdminReportes() {
           <button
             onClick={exportar}
             disabled={!datos || datos.length === 0}
-            className="bg-primary text-ink font-semibold rounded-lg px-3 py-2 text-sm inline-flex items-center gap-1.5 hover:bg-primary-dark transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            className="bg-primary text-white font-semibold rounded-lg px-3 py-2 text-sm inline-flex items-center gap-1.5 hover:bg-primary-dark transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
           >
             <Download className="w-4 h-4" />
             <span className="hidden sm:inline">Exportar Excel</span>
@@ -341,7 +341,7 @@ export default function AdminReportes() {
             key={t.key}
             onClick={() => setTab(t.key)}
             className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors whitespace-nowrap ${
-              tab === t.key ? "bg-primary text-ink" : "text-muted hover:text-ink hover:bg-white/5"
+              tab === t.key ? "bg-primary text-white" : "text-muted hover:text-ink hover:bg-ink/5"
             }`}
           >
             <t.icon className="w-4 h-4" />
@@ -368,7 +368,7 @@ export default function AdminReportes() {
           {/* TABLA DESKTOP */}
           <div className="hidden md:block bg-surface rounded-xl border border-line overflow-hidden">
             <table className="w-full text-sm">
-              <thead className="bg-black/20 text-muted text-xs uppercase tracking-wide">
+              <thead className="bg-background/70 text-muted text-xs uppercase tracking-wide">
                 <tr>
                   {tab === "clientes" && (
                     <>
@@ -416,7 +416,7 @@ export default function AdminReportes() {
               <tbody>
                 {tab === "clientes" &&
                   clientesFiltrados.map((c) => (
-                    <tr key={c.id} className="border-t border-line hover:bg-white/[0.02] transition-colors">
+                    <tr key={c.id} className="border-t border-line hover:bg-ink/[0.03] transition-colors">
                       <td className="px-5 py-4 text-ink font-medium">
                         {c.nombre} {c.apellido}
                       </td>
@@ -436,7 +436,7 @@ export default function AdminReportes() {
 
                 {tab === "membresias" &&
                   membresiasFiltradas.map((m) => (
-                    <tr key={m.id} className="border-t border-line hover:bg-white/[0.02] transition-colors">
+                    <tr key={m.id} className="border-t border-line hover:bg-ink/[0.03] transition-colors">
                       <td className="px-5 py-4 text-ink font-medium">{m.clienteNombre}</td>
                       <td className="px-5 py-4 text-ink-2">{m.planNombre}</td>
                       <td className="px-5 py-4">
@@ -449,7 +449,7 @@ export default function AdminReportes() {
 
                 {tab === "asistencias" &&
                   (asistencias ?? []).map((a) => (
-                    <tr key={a.id} className="border-t border-line hover:bg-white/[0.02] transition-colors">
+                    <tr key={a.id} className="border-t border-line hover:bg-ink/[0.03] transition-colors">
                       <td className="px-5 py-4 text-ink font-medium">{a.clienteNombre}</td>
                       <td className="px-5 py-4 text-muted text-xs">
                         {mapaSedes.get(a.sede_id) ?? a.sede_id}
@@ -462,7 +462,7 @@ export default function AdminReportes() {
 
                 {tab === "pagos" &&
                   pagosFiltrados.map((p) => (
-                    <tr key={p.id} className="border-t border-line hover:bg-white/[0.02] transition-colors">
+                    <tr key={p.id} className="border-t border-line hover:bg-ink/[0.03] transition-colors">
                       <td className="px-5 py-4 text-ink font-medium">{p.clienteNombre}</td>
                       <td className="px-5 py-4 text-muted text-xs">
                         {mapaSedes.get(p.sede_id) ?? p.sede_id}
@@ -479,7 +479,7 @@ export default function AdminReportes() {
 
                 {tab === "historial" &&
                   (historial ?? []).map((h) => (
-                    <tr key={h.id} className="border-t border-line hover:bg-white/[0.02] transition-colors">
+                    <tr key={h.id} className="border-t border-line hover:bg-ink/[0.03] transition-colors">
                       <td className="px-5 py-4 text-muted text-xs whitespace-nowrap">
                         {new Date(h.created_at).toLocaleString("es-PE")}
                       </td>

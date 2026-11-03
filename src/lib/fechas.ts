@@ -25,3 +25,13 @@ export function sumarDias(fecha: string, dias: number): string {
 // Límites de un día de Lima, listos para filtrar columnas timestamptz.
 export const inicioDiaLima = (fecha: string) => `${fecha}T00:00:00-05:00`;
 export const finDiaLima = (fecha: string) => `${fecha}T23:59:59.999-05:00`;
+
+// "lunes, 3 de noviembre" en hora de Lima.
+export function fechaLargaLima(): string {
+  return new Date().toLocaleDateString("es-PE", { timeZone: ZONA_LIMA, weekday: "long", day: "numeric", month: "long" });
+}
+
+export function saludoLima(): string {
+  const hora = Number(new Date().toLocaleString("en-GB", { hour: "2-digit", hour12: false, timeZone: ZONA_LIMA })) % 24;
+  return hora >= 5 && hora < 12 ? "Buenos días" : hora >= 12 && hora < 19 ? "Buenas tardes" : "Buenas noches";
+}

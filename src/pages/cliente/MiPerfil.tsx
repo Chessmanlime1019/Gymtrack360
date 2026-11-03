@@ -13,6 +13,7 @@ import {
 } from "@/services/membresiasService";
 import { obtenerRutinas } from "@/services/rutinasService";
 import { subirAvatar } from "@/services/avatarService";
+import { EncabezadoTablero } from "@/components/ui/Tablero";
 import {
   obtenerMiPerfil,
   obtenerMiSede,
@@ -176,14 +177,10 @@ export default function MiPerfil() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-xl md:text-2xl font-bold text-ink">
-          {perfil ? `Hola, ${perfil.nombre}` : "Mi perfil"}
-        </h1>
-        <p className="text-muted text-sm mt-1">
-          {sede ? `Tu resumen en ${sede.nombre}` : "Tu resumen en el gimnasio"}
-        </p>
-      </div>
+      <EncabezadoTablero
+        nombre={perfil?.nombre}
+        subtitulo={sede ? `Tu resumen en ${sede.nombre}` : "Tu resumen en el gimnasio"}
+      />
 
       {mensaje && (
         <div
@@ -267,7 +264,7 @@ export default function MiPerfil() {
               {/* ---------- Botón del QR ---------- */}
               <Link
                 to="/cliente/mi-qr"
-                className="w-full inline-flex items-center justify-center gap-3 bg-primary text-ink font-semibold rounded-xl h-14 text-base hover:bg-primary-dark transition-colors"
+                className="w-full inline-flex items-center justify-center gap-3 bg-primary text-white font-semibold rounded-xl h-14 text-base hover:bg-primary-dark transition-colors"
               >
                 <QrCode className="w-5 h-5" />
                 Mostrar mi QR para entrar
@@ -347,7 +344,7 @@ export default function MiPerfil() {
                   </p>
                 ) : (
                   <table className="w-full text-sm">
-                    <thead className="bg-black/20 text-muted text-xs uppercase tracking-wide">
+                    <thead className="bg-background/70 text-muted text-xs uppercase tracking-wide">
                       <tr>
                         <th className="text-left px-5 py-3 font-semibold">Fecha</th>
                         <th className="text-right px-5 py-3 font-semibold">Hora</th>
@@ -387,10 +384,10 @@ export default function MiPerfil() {
                       <img
                         src={perfil.avatar_url}
                         alt="Tu foto de perfil"
-                        className="w-16 h-16 rounded-full object-cover bg-white/15"
+                        className="w-16 h-16 rounded-full object-cover bg-ink/10"
                       />
                     ) : (
-                      <div className="w-16 h-16 rounded-full bg-white/15 flex items-center justify-center text-ink text-2xl font-semibold">
+                      <div className="w-16 h-16 rounded-full bg-ink/10 flex items-center justify-center text-ink text-2xl font-semibold">
                         {perfil.nombre.charAt(0).toUpperCase()}
                       </div>
                     )}
@@ -465,14 +462,14 @@ export default function MiPerfil() {
                       <div className="flex flex-col gap-2 mt-5">
                         <button
                           onClick={abrirEdicion}
-                          className="inline-flex items-center justify-center gap-2 bg-primary text-ink font-semibold rounded-lg h-11 text-sm hover:bg-primary-dark transition-colors"
+                          className="inline-flex items-center justify-center gap-2 bg-primary text-white font-semibold rounded-lg h-11 text-sm hover:bg-primary-dark transition-colors"
                         >
                           <Pencil className="w-4 h-4" />
                           Editar información
                         </button>
                         <button
                           onClick={abrirContrasena}
-                          className="inline-flex items-center justify-center gap-2 rounded-lg h-11 text-sm border border-line text-ink-2 hover:bg-white/5 transition-colors"
+                          className="inline-flex items-center justify-center gap-2 rounded-lg h-11 text-sm border border-line text-ink-2 hover:bg-ink/5 transition-colors"
                         >
                           <KeyRound className="w-4 h-4" />
                           Cambiar contraseña
@@ -530,7 +527,7 @@ export default function MiPerfil() {
                         <button
                           type="submit"
                           disabled={guardarMutacion.isPending}
-                          className="flex-1 h-11 bg-primary text-ink font-semibold rounded-lg text-sm hover:bg-primary-dark transition-colors disabled:opacity-50"
+                          className="flex-1 h-11 bg-primary text-white font-semibold rounded-lg text-sm hover:bg-primary-dark transition-colors disabled:opacity-50"
                         >
                           {guardarMutacion.isPending ? "Guardando..." : "Guardar cambios"}
                         </button>
@@ -538,7 +535,7 @@ export default function MiPerfil() {
                           type="button"
                           onClick={() => setModo("ver")}
                           disabled={guardarMutacion.isPending}
-                          className="h-11 px-4 rounded-lg border border-line text-ink-2 text-sm hover:bg-white/5 disabled:opacity-50"
+                          className="h-11 px-4 rounded-lg border border-line text-ink-2 text-sm hover:bg-ink/5 disabled:opacity-50"
                         >
                           Cancelar
                         </button>
@@ -594,7 +591,7 @@ export default function MiPerfil() {
                         <button
                           type="submit"
                           disabled={contrasenaMutacion.isPending}
-                          className="flex-1 h-11 bg-primary text-ink font-semibold rounded-lg text-sm hover:bg-primary-dark transition-colors disabled:opacity-50"
+                          className="flex-1 h-11 bg-primary text-white font-semibold rounded-lg text-sm hover:bg-primary-dark transition-colors disabled:opacity-50"
                         >
                           {contrasenaMutacion.isPending ? "Guardando..." : "Cambiar contraseña"}
                         </button>
@@ -602,7 +599,7 @@ export default function MiPerfil() {
                           type="button"
                           onClick={() => setModo("ver")}
                           disabled={contrasenaMutacion.isPending}
-                          className="h-11 px-4 rounded-lg border border-line text-ink-2 text-sm hover:bg-white/5 disabled:opacity-50"
+                          className="h-11 px-4 rounded-lg border border-line text-ink-2 text-sm hover:bg-ink/5 disabled:opacity-50"
                         >
                           Cancelar
                         </button>

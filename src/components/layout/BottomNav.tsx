@@ -1,4 +1,4 @@
-﻿import { useState } from "react";
+import { useState } from "react";
 import { NavLink, useLocation } from "react-router-dom";
 import { MoreHorizontal, X } from "lucide-react";
 import { useRole } from "@/hooks/useRole";
@@ -118,7 +118,7 @@ export function BottomNav() {
               <button
                 onClick={() => setMasAbierto(false)}
                 aria-label="Cerrar"
-                className="p-1.5 -m-1.5 rounded-md hover:bg-white/5"
+                className="p-1.5 -m-1.5 rounded-md hover:bg-ink/5"
               >
                 <X className="w-4 h-4 text-muted" />
               </button>

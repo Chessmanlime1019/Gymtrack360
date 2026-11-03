@@ -78,9 +78,9 @@ export function ProfileMenu() {
           w-9 h-9
           rounded-full
           overflow-hidden
-          border border-[#353b41]
+          border border-line-strong
           shrink-0
-          hover:border-[#f15a24]/60
+          hover:border-primary/60
           transition-colors
         "
       >
@@ -94,9 +94,9 @@ export function ProfileMenu() {
           <div
             className="
               w-full h-full
-              bg-[#f15a24]/15
+              bg-primary/15
               flex items-center justify-center
-              text-[#f15a24]
+              text-primary
               text-xs font-semibold
             "
           >
@@ -111,8 +111,8 @@ export function ProfileMenu() {
           className="
             absolute right-0 mt-2
             w-64
-            bg-[#1b2024]
-            border border-[#30363d]
+            bg-surface
+            border border-line
             rounded-xl
             shadow-2xl
             z-50
@@ -125,7 +125,7 @@ export function ProfileMenu() {
             className="
               p-4
               flex items-center gap-3
-              border-b border-[#30363d]
+              border-b border-line
             "
           >
             <div
@@ -134,7 +134,7 @@ export function ProfileMenu() {
                 w-12 h-12
                 rounded-full
                 overflow-hidden
-                border border-[#353b41]
+                border border-line-strong
                 shrink-0
                 group
               "
@@ -149,9 +149,9 @@ export function ProfileMenu() {
                 <div
                   className="
                     w-full h-full
-                    bg-[#f15a24]/15
+                    bg-primary/15
                     flex items-center justify-center
-                    text-[#f15a24]
+                    text-primary
                     text-sm font-semibold
                   "
                 >
@@ -188,11 +188,11 @@ export function ProfileMenu() {
             </div>
 
             <div className="min-w-0">
-              <p className="text-white text-sm font-medium truncate">
+              <p className="text-ink text-sm font-medium truncate">
                 {sesion.nombre} {sesion.apellido}
               </p>
 
-              <p className="text-[#89929b] text-xs">
+              <p className="text-muted text-xs">
                 {ETIQUETA_ROL[role]}
               </p>
             </div>
@@ -213,9 +213,9 @@ export function ProfileMenu() {
               flex items-center gap-2
               px-4 py-2.5
               text-sm
-              text-[#a5adb5]
-              hover:bg-white/[0.05]
-              hover:text-white
+              text-ink-2
+              hover:bg-ink/5
+              hover:text-ink
               transition-colors
             "
           >
@@ -231,11 +231,11 @@ export function ProfileMenu() {
               flex items-center gap-2
               px-4 py-2.5
               text-sm
-              text-[#a5adb5]
+              text-ink-2
               hover:bg-red-500/10
               hover:text-red-400
               transition-colors
-              border-t border-[#30363d]
+              border-t border-line
             "
           >
             <LogOut className="w-4 h-4" />

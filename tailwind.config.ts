@@ -1,36 +1,37 @@
 ﻿import type { Config } from "tailwindcss";
 
-// Los colores van en hex (no en var()) para que sigan funcionando las clases
-// con opacidad, como bg-primary/20. Son los mismos valores de src/styles/tokens.css:
-// si cambias uno aqui, cambialo tambien alla.
+// Los colores salen de src/styles/tokens.css (claro en :root, oscuro en .dark).
+// rgb(var(...) / <alpha-value>) mantiene las clases con opacidad, como bg-primary/20.
+const color = (nombre: string) => `rgb(var(--c-${nombre}) / <alpha-value>)`;
+
 export default {
   content: ["./index.html", "./src/**/*.{js,ts,jsx,tsx}"],
   darkMode: "class",
   theme: {
     extend: {
       colors: {
-        background: "#060A0E", // fondo de pagina
-        bar: "#0B0F13", // sidebar, barra superior, navegacion inferior (nuevo)
-        surface: "#12181E", // tarjetas y paneles (antes #1A1E22)
-        card: "#12181E", // igual que surface, nombre nuevo para codigo nuevo
-        "surface-hover": "#171F27",
-        primary: "#E8570C", // naranja de marca (antes #F15A24)
-        "primary-dark": "#F26A1B", // hover; el nombre viene del proyecto
-        "primary-press": "#C94A08",
-        muted: "#8F99A3",
-        "ink-2": "#C9D1D9", // texto secundario
-        line: "#1E2329", // bordes (antes #2A3036)
-        "line-strong": "#2A3036", // bordes al pasar el mouse o de mayor contraste
-        ink: "#FFFFFF",
-        success: "#22C55E",
-        warning: "#E2A72E",
-        danger: "#F75E53",
-        info: "#4F82F5",
+        background: color("bg"), // fondo de pagina
+        bar: color("bar"), // sidebar, barra superior, navegacion inferior
+        surface: color("surface"), // tarjetas y paneles
+        card: color("surface"),
+        "surface-hover": color("surface-hover"),
+        primary: color("primary"), // naranja de marca
+        "primary-dark": color("primary-dark"), // hover
+        "primary-press": color("primary-press"),
+        muted: color("muted"),
+        "ink-2": color("ink-2"), // texto secundario
+        line: color("line"), // bordes
+        "line-strong": color("line-strong"),
+        ink: color("ink"), // texto principal
+        success: color("success"),
+        warning: color("warning"),
+        danger: color("danger"),
+        info: color("info"),
       },
       fontFamily: {
         sans: [
-          '"Inter Variable"',
-          "Inter",
+          '"Plus Jakarta Sans Variable"',
+          '"Plus Jakarta Sans"',
           "system-ui",
           "-apple-system",
           '"Segoe UI"',
