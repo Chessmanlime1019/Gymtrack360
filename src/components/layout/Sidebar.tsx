@@ -3,7 +3,7 @@ import { NavLink } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useRole } from "@/hooks/useRole";
 
-import { NAV_POR_ROL, ETIQUETA_ROL } from "@/lib/navConfig";
+import { NAV_POR_ROL } from "@/lib/navConfig";
 
 import { SedeLateral } from "./SedeActual";
 
@@ -65,7 +65,7 @@ export function Sidebar() {
         </div>
 
         <p className="text-white text-[13px] font-extrabold tracking-wide mt-2 [font-family:'Arial_Black',var(--gt-font-body)]">
-          {ETIQUETA_ROL[role]}
+          Cascada Gym
         </p>
       </div>
 

@@ -70,7 +70,7 @@ export function InstalarApp() {
   if (!visible) return null;
 
   return (
-    <div className="fixed left-3 right-3 bottom-[88px] md:left-auto md:right-6 md:bottom-6 md:w-[360px] z-40 bg-surface border border-line-strong rounded-2xl p-4 shadow-xl">
+    <div className="fixed left-3 right-3 bottom-[128px] md:left-auto md:right-6 md:bottom-6 md:w-[360px] z-40 bg-surface border border-line-strong rounded-2xl p-4 shadow-xl">
       <button
         type="button"
         onClick={cerrar}

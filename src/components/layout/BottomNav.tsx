@@ -4,6 +4,8 @@ import { MoreHorizontal, X } from "lucide-react";
 import { useRole } from "@/hooks/useRole";
 import { NAV_POR_ROL } from "@/lib/navConfig";
 
+import { SedeMovil } from "./SedeActual";
+
 const MAX_VISIBLE = 4;
 
 export function BottomNav() {
@@ -37,6 +39,8 @@ export function BottomNav() {
           pb-[max(env(safe-area-inset-bottom),8px)]
         "
       >
+        <SedeMovil />
+
         <div className="flex">
           {visibles.map((item) => (
             <NavLink

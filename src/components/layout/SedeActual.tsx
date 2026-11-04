@@ -16,9 +16,9 @@ export function useSedeActual() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("sedes")
-        .select("nombre, direccion")
+        .select("nombre")
         .eq("id", sedeId as string)
-        .single<{ nombre: string; direccion: string | null }>();
+        .single<{ nombre: string }>();
       if (error) throw error;
       return data;
     },
@@ -26,9 +26,9 @@ export function useSedeActual() {
     staleTime: 5 * 60_000,
   });
 
-  if (global) return { nombre: "Todas las sedes", detalle: "Vista general", global, cargando: false };
-  if (!sedeId) return { nombre: "Sin sede asignada", detalle: null, global, cargando: false };
-  return { nombre: data?.nombre ?? "", detalle: data?.direccion ?? null, global, cargando: isLoading };
+  if (global) return { nombre: "Todas las sedes", global, cargando: false };
+  if (!sedeId) return { nombre: "Sin sede asignada", global, cargando: false };
+  return { nombre: data?.nombre ?? "", global, cargando: isLoading };
 }
 
 // Tarjeta al pie del menú lateral.
@@ -44,17 +44,11 @@ export function SedeLateral() {
             <Icono className="w-[18px] h-[18px]" />
           </span>
           <div className="min-w-0 flex-1">
-            <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-muted">Sede</p>
             {sede.cargando ? (
-              <div className="h-3.5 w-28 rounded bg-ink/10 animate-pulse mt-1" />
+              <div className="h-3.5 w-28 rounded bg-ink/10 animate-pulse" />
             ) : (
               <p className="text-[13px] font-semibold leading-snug text-ink line-clamp-2" title={sede.nombre}>
                 {sede.nombre}
-              </p>
-            )}
-            {sede.detalle && (
-              <p className="text-[11px] text-muted truncate mt-0.5" title={sede.detalle}>
-                {sede.detalle}
               </p>
             )}
           </div>
@@ -64,14 +58,14 @@ export function SedeLateral() {
   );
 }
 
-// Franja en el celular, donde no hay menú lateral.
+// Franja sobre la navegación inferior del celular, donde no hay menú lateral.
 export function SedeMovil() {
   const sede = useSedeActual();
   const Icono = sede.global ? Building2 : MapPin;
   if (sede.cargando) return null;
 
   return (
-    <div className="md:hidden flex items-center gap-2 px-4 py-2 border-b border-line bg-bar text-xs">
+    <div className="flex items-center justify-center gap-2 px-4 py-1.5 border-b border-line text-xs">
       <Icono className="w-3.5 h-3.5 text-primary shrink-0" />
       <span className="font-semibold text-ink truncate">{sede.nombre}</span>
     </div>
