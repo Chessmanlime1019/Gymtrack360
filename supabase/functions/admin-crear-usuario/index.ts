@@ -131,6 +131,24 @@ Deno.serve(async (req) => {
     // Cliente con permisos totales: solo para crear el usuario y su perfil.
     const admin = createClient(supabaseUrl, serviceKey);
 
+    // Solo un Admin de Sede y una Recepción activos por sede. Se revisa antes de
+    // crear la cuenta; el índice de la migración 0029 lo garantiza de todos modos.
+    if (body.role === "admin_sede" || body.role === "recepcionista") {
+      const { count, error: errCupo } = await admin
+        .from("profiles")
+        .select("id", { count: "exact", head: true })
+        .eq("sede_id", body.sedeId)
+        .eq("role", body.role)
+        .eq("activo", true);
+
+      if (errCupo) {
+        return json({ error: "No se pudo verificar la sede." }, 500);
+      }
+      if ((count ?? 0) > 0) {
+        return json({ error: mensajeCupo(body.role) }, 409);
+      }
+    }
+
     const { data: nuevoUsuario, error: errCrear } = await admin.auth.admin.createUser({
       email: body.email,
       password: body.password,
@@ -156,6 +174,9 @@ Deno.serve(async (req) => {
       // El usuario de Auth ya se creó; si el perfil falla, se revierte
       // para no dejar una cuenta fantasma sin perfil.
       await admin.auth.admin.deleteUser(nuevoUsuario.user.id);
+      if (errPerfilNuevo.code === "23505") {
+        return json({ error: mensajeCupo(body.role) }, 409);
+      }
       return json({ error: "No se pudo crear el perfil del usuario." }, 400);
     }
 
@@ -164,6 +185,12 @@ Deno.serve(async (req) => {
     return json({ error: e instanceof Error ? e.message : "Error inesperado." }, 500);
   }
 });
+
+function mensajeCupo(role: Rol) {
+  return role === "admin_sede"
+    ? "Esta sede ya tiene un Admin de Sede activo. Desactívalo primero."
+    : "Esta sede ya tiene una Recepción activa. Desactívala primero.";
+}
 
 function json(body: unknown, status: number) {
   return new Response(JSON.stringify(body), {

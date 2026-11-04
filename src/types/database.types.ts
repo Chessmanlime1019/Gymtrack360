@@ -24,6 +24,7 @@ export interface Profile {
   sede_id: string | null;
   qr_code: string | null;
   avatar_url: string | null;
+  activo: boolean;
   created_at: string;
   updated_at: string;
 }

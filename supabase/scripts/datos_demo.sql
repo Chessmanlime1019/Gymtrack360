@@ -2,7 +2,8 @@
 -- GYMTRACK 360 · Datos de demostración
 -- =====================================================================
 -- Llena el sistema con datos realistas para presentarlo funcionando:
---   · Personal por sede: 1 admin de sede, 1 recepción y 2 entrenadores.
+--   · Personal por sede: 1 admin de sede, 1 recepción y 2 entrenadores. Si la sede
+--     ya tiene admin o recepción activos, la cuenta de demostración queda desactivada.
 --   · 48 clientes (16 por sede) con meses de historia: membresías vigentes,
 --     por vencer, vencidas, canceladas y renovaciones, sus pagos, asistencias
 --     con horas punta reales, rutinas, mediciones, avisos y 2 pagos por confirmar.
@@ -45,7 +46,14 @@ begin
   values (gen_random_uuid(), v_id, v_id::text,
           jsonb_build_object('sub', v_id::text, 'email', p_email, 'email_verified', true),
           'email', p_creado, p_creado, p_creado);
-  update public.profiles set role = p_rol::user_role, created_at = p_creado where id = v_id;
+  update public.profiles
+  set role = p_rol::user_role,
+      created_at = p_creado,
+      activo = p_rol not in ('admin_sede', 'recepcionista') or not exists (
+        select 1 from public.profiles o
+        where o.sede_id = p_sede and o.role = p_rol::user_role and o.activo
+      )
+  where id = v_id;
   return v_id;
 end $f$;
 

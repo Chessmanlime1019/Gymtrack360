@@ -28,16 +28,19 @@ interface AuthContextValue {
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
+const CUENTA_DESACTIVADA = "Tu cuenta está desactivada. Comunícate con la administración del gimnasio.";
+
 async function cargarPerfil(userId: string, email: string): Promise<SesionUsuario> {
   const { data, error } = await supabase
     .from("profiles")
-    .select("nombre, apellido, role, sede_id, avatar_url")
+    .select("nombre, apellido, role, sede_id, avatar_url, activo")
     .eq("id", userId)
-    .single<Pick<Profile, "nombre" | "apellido" | "role" | "sede_id" | "avatar_url">>();
+    .single<Pick<Profile, "nombre" | "apellido" | "role" | "sede_id" | "avatar_url" | "activo">>();
 
   if (error || !data) {
     throw new Error("No se pudo cargar el perfil del usuario");
   }
+  if (!data.activo) throw new Error(CUENTA_DESACTIVADA);
 
   return {
     userId,
@@ -63,8 +66,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         try {
           const perfil = await cargarPerfil(session.user.id, session.user.email!);
           if (activo) setSesion(perfil);
-        } catch {
+        } catch (err) {
           if (activo) setSesion(null);
+          // La desactivaron con la sesión abierta: se cierra al volver a entrar.
+          if (err instanceof Error && err.message === CUENTA_DESACTIVADA) await supabase.auth.signOut();
         }
       }
       if (activo) setCargando(false);
@@ -93,8 +98,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   async function login(email: string, password: string) {
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) throw error;
+
+    const { data: perfil } = await supabase
+      .from("profiles")
+      .select("activo")
+      .eq("id", data.user.id)
+      .single<Pick<Profile, "activo">>();
+    if (perfil && !perfil.activo) {
+      await supabase.auth.signOut();
+      throw new Error(CUENTA_DESACTIVADA);
+    }
   }
 
   async function refrescarPerfil() {

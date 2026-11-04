@@ -139,7 +139,7 @@ export default function AdminUsuarios() {
       setUsuarioEditando(null);
       mostrarMensaje("ok", "Usuario actualizado correctamente.");
     },
-    onError: () => mostrarMensaje("error", "No se pudo guardar el cambio."),
+    onError: (err: Error) => mostrarMensaje("error", err.message),
   });
 
   function abrirEdicion(usuario: UsuarioCompleto) {
@@ -155,13 +155,16 @@ export default function AdminUsuarios() {
 
   // ---------------- Activar / desactivar ----------------
   const activoMutacion = useMutation({
-    mutationFn: (u: UsuarioCompleto) => alternarActivoUsuario(u.id, !u.activo),
+    mutationFn: (u: UsuarioCompleto) => alternarActivoUsuario(u.id, !u.activo, u.role),
     onSuccess: (_d, u) => {
       queryClient.invalidateQueries({ queryKey: ["admin-usuarios"] });
       mostrarMensaje("ok", u.activo ? "Usuario desactivado." : "Usuario activado.");
       setUsuarioCambiandoEstado(null);
     },
-    onError: () => mostrarMensaje("error", "No se pudo cambiar el estado."),
+    onError: (err: Error) => {
+      mostrarMensaje("error", err.message);
+      setUsuarioCambiandoEstado(null);
+    },
   });
 
   // ---------------- Crear ----------------

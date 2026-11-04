@@ -27,6 +27,17 @@ interface SedeMini {
   nombre: string;
 }
 
+// La base de datos solo admite un Admin de Sede y una Recepción activos por sede
+// (migración 0029). Aquí se traduce ese rechazo a un mensaje que se entienda.
+function mensajeDeError(error: { code?: string; message?: string }, role: UserRole, porDefecto: string) {
+  if (error.code === "23505" && error.message?.includes("profiles_un_admin_o_recepcion_activo")) {
+    return role === "admin_sede"
+      ? "Esta sede ya tiene un Admin de Sede activo. Desactívalo primero."
+      : "Esta sede ya tiene una Recepción activa. Desactívala primero.";
+  }
+  return porDefecto;
+}
+
 export async function obtenerTodosLosUsuarios(): Promise<UsuarioCompleto[]> {
   const { data, error } = await supabase
     .from("profiles")
@@ -69,18 +80,18 @@ export async function actualizarUsuario(
     })
     .eq("id", id);
 
-  if (error) throw error;
+  if (error) throw new Error(mensajeDeError(error, cambios.role, "No se pudo guardar el cambio."));
 }
 
 // No existe un "eliminarUsuario" real a propósito: borrar de Auth requiere
 // la service_role key, que nunca debe usarse desde el navegador. En su
 // lugar, se desactiva (mismo patrón que alternarActivaSede).
-export async function alternarActivoUsuario(id: string, activo: boolean) {
+export async function alternarActivoUsuario(id: string, activo: boolean, role: UserRole) {
   const { error } = await (supabase.from("profiles") as any)
     .update({ activo })
     .eq("id", id);
 
-  if (error) throw error;
+  if (error) throw new Error(mensajeDeError(error, role, "No se pudo cambiar el estado."));
 }
 
 export interface NuevoUsuarioInput {
@@ -100,14 +111,10 @@ export async function crearUsuario(datos: NuevoUsuarioInput) {
   });
 
   if (error) {
-    // supabase-js no siempre expone el mensaje del backend en `error.message`
-    // cuando la función responde con un status distinto de 2xx; por eso se
-    // intenta leer el cuerpo de la respuesta si está disponible.
-    const mensaje =
-      (error as { context?: { body?: { error?: string } } }).context?.body?.error ??
-      error.message ??
-      "No se pudo crear el usuario.";
-    throw new Error(mensaje);
+    // Cuando la función responde con un status distinto de 2xx, supabase-js deja
+    // la respuesta en `error.context`: el mensaje real está en su cuerpo.
+    const cuerpo = await (error as { context?: Response }).context?.json().catch(() => null);
+    throw new Error(cuerpo?.error ?? "No se pudo crear el usuario.");
   }
 
   return data as { id: string };
