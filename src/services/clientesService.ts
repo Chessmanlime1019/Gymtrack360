@@ -1,4 +1,5 @@
 import { supabase } from "@/lib/supabaseClient";
+import { traerPorIds, traerTodas } from "@/lib/paginar";
 import type { MembresiaEstado } from "@/types";
 
 export interface ClienteConMembresia {
@@ -36,33 +37,30 @@ interface SedeMini {
 export async function obtenerClientes(
   sedeId: string | null
 ): Promise<ClienteConMembresia[]> {
-  let query = supabase
-    .from("profiles")
-    .select("id, nombre, apellido, sede_id, qr_code, created_at")
-    .eq("role", "cliente")
-    .order("created_at", { ascending: false });
-
-  if (sedeId) {
-    query = query.eq("sede_id", sedeId);
-  }
-
-  const { data, error } = await query.returns<ClienteRow[]>();
-  if (error) throw error;
-  if (!data || data.length === 0) return [];
+  const data = await traerTodas<ClienteRow>(() => {
+    let query = supabase
+      .from("profiles")
+      .select("id, nombre, apellido, sede_id, qr_code, created_at")
+      .eq("role", "cliente")
+      .order("created_at", { ascending: false })
+      .order("id");
+    if (sedeId) query = query.eq("sede_id", sedeId);
+    return query;
+  });
+  if (data.length === 0) return [];
 
   // Segunda consulta: la membresía más reciente de cada cliente.
   const ids = data.map((c) => c.id);
-  const { data: membresias, error: errorMem } = await supabase
-    .from("membresias")
-    .select("cliente_id, estado, fecha_fin")
-    .in("cliente_id", ids)
-    .order("fecha_fin", { ascending: false })
-    .returns<MembresiaRow[]>();
-
-  if (errorMem) throw errorMem;
+  const membresias = await traerPorIds<MembresiaRow>(ids, (lote) =>
+    supabase
+      .from("membresias")
+      .select("cliente_id, estado, fecha_fin")
+      .in("cliente_id", lote)
+      .order("fecha_fin", { ascending: false })
+  );
 
   const mapaMembresia = new Map<string, MembresiaRow>();
-  (membresias ?? []).forEach((m) => {
+  membresias.forEach((m) => {
     if (!mapaMembresia.has(m.cliente_id)) {
       mapaMembresia.set(m.cliente_id, m);
     }

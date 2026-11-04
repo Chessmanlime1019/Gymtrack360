@@ -1,5 +1,6 @@
 import { supabase } from "@/lib/supabaseClient";
 import { diaLima, finDiaLima, inicioDiaLima } from "@/lib/fechas";
+import { traerPorIds, traerTodas } from "@/lib/paginar";
 
 // En este archivo "desde" y "hasta" son días YYYY-MM-DD en hora de Lima.
 
@@ -8,6 +9,7 @@ export interface AsistenciaRegistro {
   cliente_id: string;
   sede_id: string;
   fecha_hora: string;
+  salida_at: string | null;
 }
 
 export interface AsistenciaConNombre extends AsistenciaRegistro {
@@ -25,41 +27,28 @@ export interface AsistenciaPorSede {
   cantidad: number;
 }
 
-async function obtenerNombreCliente(clienteId: string): Promise<string> {
-  const { data, error } = await supabase
-    .from("profiles")
-    .select("nombre, apellido")
-    .eq("id", clienteId)
-    .single<{ nombre: string; apellido: string }>();
-
-  if (error || !data) return "Cliente";
-  return `${data.nombre} ${data.apellido}`;
-}
-
 export async function obtenerAsistencias(
   sedeId: string | null,
   desde?: string,
   hasta?: string
 ): Promise<AsistenciaConNombre[]> {
-  let query = supabase
-    .from("asistencias")
-    .select("id, cliente_id, sede_id, fecha_hora")
-    .order("fecha_hora", { ascending: false })
-    .limit(100);
-
-  if (sedeId) {
-    query = query.eq("sede_id", sedeId);
-  }
-  if (desde) query = query.gte("fecha_hora", inicioDiaLima(desde));
-  if (hasta) query = query.lte("fecha_hora", finDiaLima(hasta));
-
-  const { data, error } = await query.returns<AsistenciaRegistro[]>();
-  if (error) throw error;
-  if (!data || data.length === 0) return [];
+  const data = await traerTodas<AsistenciaRegistro>(() => {
+    let query = (supabase.from("asistencias") as any)
+      .select("id, cliente_id, sede_id, fecha_hora, salida_at")
+      .order("fecha_hora", { ascending: false })
+      .order("id");
+    if (sedeId) query = query.eq("sede_id", sedeId);
+    if (desde) query = query.gte("fecha_hora", inicioDiaLima(desde));
+    if (hasta) query = query.lte("fecha_hora", finDiaLima(hasta));
+    return query;
+  });
+  if (data.length === 0) return [];
 
   const clienteIds = [...new Set(data.map((a) => a.cliente_id))];
-  const nombres = await Promise.all(clienteIds.map(obtenerNombreCliente));
-  const mapa = new Map(clienteIds.map((id, i) => [id, nombres[i]]));
+  const clientes = await traerPorIds<{ id: string; nombre: string; apellido: string }>(clienteIds, (lote) =>
+    supabase.from("profiles").select("id, nombre, apellido").in("id", lote)
+  );
+  const mapa = new Map(clientes.map((c) => [c.id, `${c.nombre} ${c.apellido}`]));
 
   return data.map((a) => ({
     ...a,
@@ -92,19 +81,14 @@ export async function asistenciasAgrupadasPorDia(
   desde?: string,
   hasta?: string
 ): Promise<AsistenciaPorDia[]> {
-  let query = supabase
-    .from("asistencias")
-    .select("fecha_hora");
-
-  if (sedeId) {
-    query = query.eq("sede_id", sedeId);
-  }
-  if (desde) query = query.gte("fecha_hora", inicioDiaLima(desde));
-  if (hasta) query = query.lte("fecha_hora", finDiaLima(hasta));
-
-  const { data, error } = await query.returns<{ fecha_hora: string }[]>();
-  if (error) throw error;
-  if (!data || data.length === 0) return [];
+  const data = await traerTodas<{ fecha_hora: string }>(() => {
+    let query = supabase.from("asistencias").select("fecha_hora").order("id");
+    if (sedeId) query = query.eq("sede_id", sedeId);
+    if (desde) query = query.gte("fecha_hora", inicioDiaLima(desde));
+    if (hasta) query = query.lte("fecha_hora", finDiaLima(hasta));
+    return query;
+  });
+  if (data.length === 0) return [];
 
   const conteo = new Map<string, number>();
   data.forEach((a) => {
@@ -121,16 +105,13 @@ export async function asistenciasPorSede(
   desde?: string,
   hasta?: string
 ): Promise<AsistenciaPorSede[]> {
-  let query = supabase
-    .from("asistencias")
-    .select("sede_id");
-
-  if (desde) query = query.gte("fecha_hora", inicioDiaLima(desde));
-  if (hasta) query = query.lte("fecha_hora", finDiaLima(hasta));
-
-  const { data, error } = await query.returns<{ sede_id: string }[]>();
-  if (error) throw error;
-  if (!data || data.length === 0) return [];
+  const data = await traerTodas<{ sede_id: string }>(() => {
+    let query = supabase.from("asistencias").select("sede_id").order("id");
+    if (desde) query = query.gte("fecha_hora", inicioDiaLima(desde));
+    if (hasta) query = query.lte("fecha_hora", finDiaLima(hasta));
+    return query;
+  });
+  if (data.length === 0) return [];
 
   const { data: sedes } = await supabase
     .from("sedes")

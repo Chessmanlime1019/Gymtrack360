@@ -9,7 +9,7 @@ import {
   CheckCircle2,
   CreditCard,
   Landmark,
-  Printer,
+  Download,
   Receipt,
   Search,
   Smartphone,
@@ -18,6 +18,7 @@ import {
 
 import { useAuth } from "@/hooks/useAuth";
 import { AsyncState } from "@/components/ui/AsyncState";
+import { descargarComprobante, fechaHoraTexto } from "@/lib/exportar";
 import { obtenerSedesActivas } from "@/services/sedesService";
 import { obtenerClientes, type ClienteConMembresia } from "@/services/clientesService";
 import {
@@ -206,14 +207,6 @@ export default function RegistrarPago() {
 
   return (
     <div className="space-y-5">
-      <style>{`
-        @media print {
-          body * { visibility: hidden !important; }
-          #recibo-pago, #recibo-pago * { visibility: visible !important; }
-          #recibo-pago { position: fixed; left: 0; top: 0; width: 100%; background: #fff !important; color: #000 !important; padding: 24px; }
-        }
-      `}</style>
-
       {/* Encabezado + resumen del día */}
       <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
         <div>
@@ -372,7 +365,6 @@ export default function RegistrarPago() {
               /* ---------- RECIBO ---------- */
               <div className="space-y-3">
                 <div
-                  id="recibo-pago"
                   className="bg-surface border border-line rounded-3xl overflow-hidden"
                 >
                   <div className="bg-primary px-5 py-4 flex items-center gap-3">
@@ -412,10 +404,25 @@ export default function RegistrarPago() {
                 </div>
                 <div className="flex gap-2">
                   <button
-                    onClick={() => window.print()}
+                    onClick={() =>
+                      descargarComprobante({
+                        titulo: "Recibo de pago",
+                        numero: String(recibo.numero),
+                        monto: recibo.monto,
+                        datos: [
+                          ["Cliente", recibo.cliente],
+                          ["Plan", recibo.plan],
+                          ["Método", recibo.metodo],
+                          ["Sede", recibo.sede],
+                          ["Fecha", fechaHoraTexto(recibo.fecha.toISOString())],
+                        ],
+                        nota: "Recibo interno de GYMTRACK 360 · Cascada Gym. No tiene validez tributaria.",
+                        archivo: `recibo_${recibo.numero}`,
+                      })
+                    }
                     className="flex-1 h-11 rounded-xl border border-line text-ink text-sm font-medium hover:border-line-strong inline-flex items-center justify-center gap-2"
                   >
-                    <Printer className="w-4 h-4" /> Imprimir
+                    <Download className="w-4 h-4" /> Descargar PDF
                   </button>
                   <button
                     onClick={cerrarPanel}

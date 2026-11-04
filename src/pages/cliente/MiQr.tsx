@@ -94,8 +94,8 @@ export default function MiQr() {
               {codigo ? (
                 <>
                   {/* El QR siempre va sobre blanco puro para que el lector lo detecte. */}
-                  <div ref={canvasRef} className="mx-auto w-fit bg-white p-4 rounded-2xl">
-                    <QRCodeCanvas value={codigo} size={232} level="M" bgColor="#ffffff" fgColor="#000000" />
+                  <div ref={canvasRef} className="mx-auto w-fit bg-white p-1 rounded-2xl">
+                    <QRCodeCanvas value={codigo} size={232} level="M" marginSize={4} bgColor="#ffffff" fgColor="#000000" />
                   </div>
 
                   <div className="text-center">

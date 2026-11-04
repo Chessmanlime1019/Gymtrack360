@@ -1,11 +1,15 @@
 export * from "./database.types";
 
-// Respuesta de la función RPC validar_acceso_qr (la crearemos en 0003)
+// Respuesta de la función RPC validar_acceso_qr
 export interface ValidacionAcceso {
   autorizado: boolean;
+  tipo?: "entrada" | "salida";
   motivo: string | null;
   cliente: string | null;
   plan: string | null;
+  minutos?: number; // solo en salidas
+  dentro?: number;
+  aforo_maximo?: number | null;
 }
 
 // Sesión de usuario enriquecida con su perfil (usada en AuthContext)

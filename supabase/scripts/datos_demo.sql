@@ -13,6 +13,7 @@
 -- los datos reales. Las sedes y planes existentes se reutilizan; si no hay
 -- planes activos, se crean 4 planes estándar.
 --
+-- Requiere la migración 0028 (aforo).
 -- Uso: Supabase > SQL Editor > ejecutar PASO 1 (todo hasta el "fin del paso 1").
 -- =====================================================================
 
@@ -71,6 +72,8 @@ declare
   v_admin uuid;
   v_admin_1 uuid;
   v_t int;
+  v_entrada timestamptz;
+  v_salida timestamptz;
   v_plan record;
   v_cli uuid;
   v_memb uuid;
@@ -122,6 +125,9 @@ begin
   if coalesce(array_length(v_sedes, 1), 0) = 0 then
     raise exception 'No hay sedes activas.';
   end if;
+
+  -- Aforo de ejemplo para ver el medidor; se cambia en Sedes.
+  update public.sedes set aforo_maximo = 60 where activa and aforo_maximo is null;
 
   -- Planes: se usan los que existen; si no hay, se crean los estándar.
   if not exists (select 1 from public.planes where activo) then
@@ -244,10 +250,14 @@ begin
         if random() < v_asist and extract(isodow from v_d) <> 7 then
           v_hora := pg_temp.hora_visita();
           if v_d < v_hoy or v_hora < v_hora_actual then
-            insert into public.asistencias (cliente_id, sede_id, fecha_hora)
+            v_entrada := pg_temp.lima(v_d, v_hora, floor(random() * 60)::int);
+            v_salida := v_entrada + ((45 + floor(random() * 65)::int) || ' minutes')::interval;
+            -- Quien aún no termina sigue dentro; 1 de cada 5 olvida escanear al salir.
+            insert into public.asistencias (cliente_id, sede_id, fecha_hora, salida_at)
             values (v_cli, case when v_plan.es_multisede and random() < 0.15
                                 then v_sedes[1 + floor(random() * array_length(v_sedes, 1))::int] else v_sede end,
-                    pg_temp.lima(v_d, v_hora, floor(random() * 60)::int));
+                    v_entrada,
+                    case when v_salida < now() and random() < 0.8 then v_salida end);
           end if;
         end if;
         v_d := v_d + 1;

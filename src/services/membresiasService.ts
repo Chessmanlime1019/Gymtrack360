@@ -1,5 +1,6 @@
 import { supabase } from "@/lib/supabaseClient";
 import { hoyLima, sumarDias } from "@/lib/fechas";
+import { traerPorIds, traerTodas } from "@/lib/paginar";
 import type { MembresiaEstado } from "@/types";
 
 export interface MembresiaConDetalle {
@@ -38,18 +39,16 @@ interface PlanMini {
 export async function obtenerMembresias(
   sedeId: string | null
 ): Promise<MembresiaConDetalle[]> {
-  let query = supabase
-    .from("membresias")
-    .select("id, cliente_id, plan_id, sede_origen_id, fecha_inicio, fecha_fin, estado")
-    .order("fecha_fin", { ascending: false });
-
-  if (sedeId) {
-    query = query.eq("sede_origen_id", sedeId);
-  }
-
-  const { data, error } = await query.returns<MembresiaRow[]>();
-  if (error) throw error;
-  if (!data || data.length === 0) return [];
+  const data = await traerTodas<MembresiaRow>(() => {
+    let query = supabase
+      .from("membresias")
+      .select("id, cliente_id, plan_id, sede_origen_id, fecha_inicio, fecha_fin, estado")
+      .order("fecha_fin", { ascending: false })
+      .order("id");
+    if (sedeId) query = query.eq("sede_origen_id", sedeId);
+    return query;
+  });
+  if (data.length === 0) return [];
 
   // Igual que en clientesService: dos consultas separadas en vez de un
   // join embebido, porque Relationships:[] en database.types.ts bloquea
@@ -57,24 +56,16 @@ export async function obtenerMembresias(
   const clienteIds = [...new Set(data.map((m) => m.cliente_id))];
   const planIds = [...new Set(data.map((m) => m.plan_id))];
 
-  const [{ data: clientes, error: errCli }, { data: planes, error: errPlan }] =
-    await Promise.all([
-      supabase
-        .from("profiles")
-        .select("id, nombre, apellido")
-        .in("id", clienteIds)
-        .returns<ClienteMini[]>(),
-      supabase
-        .from("planes")
-        .select("id, nombre")
-        .in("id", planIds)
-        .returns<PlanMini[]>(),
-    ]);
+  const [clientes, { data: planes, error: errPlan }] = await Promise.all([
+    traerPorIds<ClienteMini>(clienteIds, (lote) =>
+      supabase.from("profiles").select("id, nombre, apellido").in("id", lote)
+    ),
+    supabase.from("planes").select("id, nombre").in("id", planIds).returns<PlanMini[]>(),
+  ]);
 
-  if (errCli) throw errCli;
   if (errPlan) throw errPlan;
 
-  const mapaClientes = new Map((clientes ?? []).map((c) => [c.id, c]));
+  const mapaClientes = new Map(clientes.map((c) => [c.id, c]));
   const mapaPlanes = new Map((planes ?? []).map((p) => [p.id, p]));
 
   return data.map((m) => {

@@ -6,12 +6,14 @@ export interface AsistenciaEnVivo {
     id: string;
     clienteNombre: string;
     fechaHora: string;
+    salidaAt: string | null;
 }
 
 interface AsistenciaRow {
     id: string;
     cliente_id: string;
     fecha_hora: string;
+    salida_at: string | null;
 }
 
 async function obtenerNombreCliente(clienteId: string): Promise<string> {
@@ -39,7 +41,7 @@ export function useRealtimeAsistencias(sedeId: string | null) {
         async function cargarInicial() {
             const { data, error } = await supabase
                 .from("asistencias")
-                .select("id, cliente_id, fecha_hora")
+                .select("id, cliente_id, fecha_hora, salida_at")
                 .eq("sede_id", sedeActual)
                 .order("fecha_hora", { ascending: false })
                 .limit(10)
@@ -56,6 +58,7 @@ export function useRealtimeAsistencias(sedeId: string | null) {
                     id: a.id,
                     clienteNombre: await obtenerNombreCliente(a.cliente_id),
                     fechaHora: a.fecha_hora,
+                    salidaAt: a.salida_at,
                 }))
             );
 
@@ -81,11 +84,26 @@ export function useRealtimeAsistencias(sedeId: string | null) {
                     if (activo) {
                         setAsistencias((prev) =>
                             [
-                                { id: nuevo.id, clienteNombre: nombre, fechaHora: nuevo.fecha_hora },
+                                { id: nuevo.id, clienteNombre: nombre, fechaHora: nuevo.fecha_hora, salidaAt: nuevo.salida_at },
                                 ...prev,
                             ].slice(0, 10)
                         );
                     }
+                }
+            )
+            .on(
+                "postgres_changes",
+                {
+                    event: "UPDATE",
+                    schema: "public",
+                    table: "asistencias",
+                    filter: `sede_id=eq.${sedeActual}`,
+                },
+                (payload) => {
+                    const cambio = payload.new as AsistenciaRow;
+                    setAsistencias((prev) =>
+                        prev.map((a) => (a.id === cambio.id ? { ...a, salidaAt: cambio.salida_at } : a))
+                    );
                 }
             )
             .subscribe();

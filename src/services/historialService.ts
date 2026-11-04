@@ -1,4 +1,5 @@
 import { supabase } from "@/lib/supabaseClient";
+import { traerTodas } from "@/lib/paginar";
 
 export interface OperacionHistorial {
   id: string;
@@ -84,21 +85,18 @@ export async function obtenerHistorial(
   desde: string,
   hastaISO: string
 ): Promise<OperacionHistorial[]> {
-  let query = supabase
-    .from("historial_operaciones")
-    .select("id, tabla, operacion, registro_id, sede_id, actor_id, detalle, created_at")
-    .gte("created_at", desde)
-    .lte("created_at", hastaISO)
-    .order("created_at", { ascending: false })
-    .limit(500);
-
-  if (sedeId) {
-    query = query.eq("sede_id", sedeId);
-  }
-
-  const { data, error } = await query.returns<HistorialRow[]>();
-  if (error) throw error;
-  if (!data || data.length === 0) return [];
+  const data = await traerTodas<HistorialRow>(() => {
+    let query = supabase
+      .from("historial_operaciones")
+      .select("id, tabla, operacion, registro_id, sede_id, actor_id, detalle, created_at")
+      .gte("created_at", desde)
+      .lte("created_at", hastaISO)
+      .order("created_at", { ascending: false })
+      .order("id");
+    if (sedeId) query = query.eq("sede_id", sedeId);
+    return query;
+  });
+  if (data.length === 0) return [];
 
   const sedeIds = [...new Set(data.map((f) => f.sede_id).filter(Boolean))] as string[];
   const actorIds = [...new Set(data.map((f) => f.actor_id).filter(Boolean))] as string[];

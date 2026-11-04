@@ -37,9 +37,12 @@ export default function AdminSedes() {
   } = useForm<SedeFormValues>({ resolver: zodResolver(sedeSchema) });
 
   const guardarMutacion = useMutation({
-    mutationFn: (values: SedeFormValues) =>
-      sedeEditando ? actualizarSede(sedeEditando.id, values) : crearSede(values),
+    mutationFn: ({ aforoMaximo, ...values }: SedeFormValues) => {
+      const datos = { ...values, aforo_maximo: aforoMaximo ? Number(aforoMaximo) : null };
+      return sedeEditando ? actualizarSede(sedeEditando.id, datos) : crearSede(datos);
+    },
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["aforo-sedes"] });
       queryClient.invalidateQueries({ queryKey: ["admin-sedes"] });
       queryClient.invalidateQueries({ queryKey: ["sedes-activas"] });
       cerrarModal();
@@ -57,13 +60,13 @@ export default function AdminSedes() {
 
   function abrirNueva() {
     setSedeEditando(null);
-    reset({ nombre: "", direccion: "" });
+    reset({ nombre: "", direccion: "", aforoMaximo: "" });
     setModalAbierto(true);
   }
 
   function abrirEdicion(sede: SedeCompleta) {
     setSedeEditando(sede);
-    reset({ nombre: sede.nombre, direccion: sede.direccion ?? "" });
+    reset({ nombre: sede.nombre, direccion: sede.direccion ?? "", aforoMaximo: sede.aforo_maximo ? String(sede.aforo_maximo) : "" });
     setModalAbierto(true);
   }
 
@@ -135,6 +138,12 @@ export default function AdminSedes() {
                   <Pencil className="w-4 h-4" />
                 </button>
               </div>
+              <p className="text-xs text-muted">
+                Aforo máximo:{" "}
+                <span className="text-ink-2 font-medium">
+                  {sede.aforo_maximo ? `${sede.aforo_maximo} personas` : "sin definir"}
+                </span>
+              </p>
               <button
                 onClick={() => pedirCambioEstado(sede)}
                 disabled={alternarMutacion.isPending}
@@ -184,6 +193,23 @@ export default function AdminSedes() {
             />
             {errors.direccion && (
               <p className="text-danger text-xs mt-1">{errors.direccion.message}</p>
+            )}
+          </div>
+
+          <div>
+            <label htmlFor="aforoMaximo" className="block text-sm mb-1 text-ink">
+              Aforo máximo <span className="text-muted">(opcional)</span>
+            </label>
+            <input
+              id="aforoMaximo"
+              inputMode="numeric"
+              placeholder="Ej. 60"
+              {...register("aforoMaximo")}
+              className="w-full rounded-lg bg-background border border-line px-3 py-2 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-primary"
+            />
+            <p className="text-muted text-xs mt-1">Personas permitidas a la vez. Al superarlo se avisa a recepción, no se bloquea el ingreso.</p>
+            {errors.aforoMaximo && (
+              <p className="text-danger text-xs mt-1">{errors.aforoMaximo.message}</p>
             )}
           </div>
 

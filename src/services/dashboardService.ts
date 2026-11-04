@@ -1,5 +1,6 @@
 import { supabase } from "@/lib/supabaseClient";
 import { diaLima, finDiaLima, hoyLima, inicioDiaLima, primerDiaMesLima, sumarDias } from "@/lib/fechas";
+import { traerTodas } from "@/lib/paginar";
 
 // Los indicadores se consultan directo sobre las tablas: las políticas RLS ya
 // limitan a cada rol a su sede (super admin ve todas). "desde" y "hasta" son
@@ -77,10 +78,12 @@ export async function obtenerDashboardGlobal(
 
   const [clientes, clientesVigentes, porVencer, checkins, pagos, sedes, membresias] = await Promise.all([
     deSede(supabase.from("profiles").select("id", { count: "exact", head: true }).eq("role", "cliente"), "sede_id", sedeId),
-    deSede(
-      supabase.from("membresias").select("cliente_id").eq("estado", "activa").gte("fecha_fin", hoy),
-      "sede_origen_id",
-      sedeId
+    traerTodas<{ cliente_id: string }>(() =>
+      deSede(
+        supabase.from("membresias").select("cliente_id").eq("estado", "activa").gte("fecha_fin", hoy).order("id"),
+        "sede_origen_id",
+        sedeId
+      )
     ),
     deSede(
       supabase
@@ -101,25 +104,27 @@ export async function obtenerDashboardGlobal(
       "sede_id",
       sedeId
     ),
-    deSede(
-      supabase.from("pagos").select("monto").gte("fecha", inicioDiaLima(d)).lte("fecha", finDiaLima(h)),
-      "sede_id",
-      sedeId
+    traerTodas<{ monto: number }>(() =>
+      deSede(
+        supabase.from("pagos").select("monto").gte("fecha", inicioDiaLima(d)).lte("fecha", finDiaLima(h)).order("id"),
+        "sede_id",
+        sedeId
+      )
     ),
     supabase.from("sedes").select("id, activa").returns<{ id: string; activa: boolean }[]>(),
     contarMembresias(sedeId),
   ]);
-  sinError(clientes, clientesVigentes, porVencer, checkins, pagos, sedes);
+  sinError(clientes, porVencer, checkins, sedes);
 
   const sedesArr = sedes.data ?? [];
-  const idsVigentes = new Set(((clientesVigentes.data ?? []) as { cliente_id: string }[]).map((m) => m.cliente_id));
+  const idsVigentes = new Set(clientesVigentes.map((m) => m.cliente_id));
 
   return {
     totalClientes: clientes.count ?? 0,
     clientesActivos: idsVigentes.size,
     checkinsHoy: checkins.count ?? 0,
     membresiasPorVencer: porVencer.count ?? 0,
-    ingresosMes: ((pagos.data ?? []) as { monto: number }[]).reduce((suma, p) => suma + Number(p.monto ?? 0), 0),
+    ingresosMes: pagos.reduce((suma, p) => suma + Number(p.monto ?? 0), 0),
     totalSedes: sedesArr.length,
     sedesActivas: sedesArr.filter((s) => s.activa).length,
     membresiasActivas: membresias.vigentes,
@@ -135,16 +140,17 @@ export async function obtenerIngresosPorDia(
   const d = desde ?? primerDiaMesLima();
   const h = hasta ?? hoyLima();
 
-  const { data, error } = await deSede(
-    supabase.from("pagos").select("monto, fecha").gte("fecha", inicioDiaLima(d)).lte("fecha", finDiaLima(h)),
-    "sede_id",
-    sedeId
+  const data = await traerTodas<{ monto: number; fecha: string }>(() =>
+    deSede(
+      supabase.from("pagos").select("monto, fecha").gte("fecha", inicioDiaLima(d)).lte("fecha", finDiaLima(h)).order("id"),
+      "sede_id",
+      sedeId
+    )
   );
-  if (error) throw error;
-  if (!data || data.length === 0) return [];
+  if (data.length === 0) return [];
 
   const mapa = new Map<string, number>();
-  (data as { monto: number; fecha: string }[]).forEach((p) => {
+  data.forEach((p) => {
     const dia = diaLima(p.fecha);
     mapa.set(dia, (mapa.get(dia) ?? 0) + Number(p.monto ?? 0));
   });
@@ -188,14 +194,10 @@ export async function obtenerIngresosPorSede(desde?: string, hasta?: string): Pr
   const d = desde ?? primerDiaMesLima();
   const h = hasta ?? hoyLima();
 
-  const { data: pagos } = await supabase
-    .from("pagos")
-    .select("sede_id, monto")
-    .gte("fecha", inicioDiaLima(d))
-    .lte("fecha", finDiaLima(h))
-    .returns<{ sede_id: string; monto: number }[]>();
-
-  if (!pagos || pagos.length === 0) return [];
+  const pagos = await traerTodas<{ sede_id: string; monto: number }>(() =>
+    supabase.from("pagos").select("sede_id, monto").gte("fecha", inicioDiaLima(d)).lte("fecha", finDiaLima(h)).order("id")
+  );
+  if (pagos.length === 0) return [];
 
   const { data: sedes } = await supabase.from("sedes").select("id, nombre").returns<{ id: string; nombre: string }[]>();
 

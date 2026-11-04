@@ -41,6 +41,9 @@ export default defineConfig({
                 cleanupOutdatedCaches: true,
                 // El archivo principal pesa ~1.9 MB; este límite evita que el plugin lo ignore.
                 maximumFileSizeToCacheInBytes: 2 * 1024 * 1024,
+                // Las librerías de PDF y Excel pesan ~1.5 MB y solo se usan al exportar:
+                // no se descargan a todos al instalar la app, solo cuando hacen falta.
+                globIgnores: ["**/exceljs*", "**/jspdf*", "**/html2canvas*", "**/purify*", "**/index.es-*"],
             },
         }),
     ],

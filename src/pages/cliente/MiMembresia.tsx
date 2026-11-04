@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { CalendarDays, CreditCard, Download, MapPin, QrCode, Receipt } from "lucide-react";
 
 import { AsyncState } from "@/components/ui/AsyncState";
+import { descargarComprobante, fechaHoraTexto } from "@/lib/exportar";
 import { Modal } from "@/components/ui/Modal";
 import { obtenerMiPerfil, obtenerMiSede } from "@/services/perfilService";
 import { obtenerMisMembresias, obtenerMisPagos, type MiPago } from "@/services/miMembresiaService";
@@ -285,17 +286,9 @@ export default function MiMembresia() {
         </div>
       </AsyncState>
 
-      <style>{`
-        @media print {
-          body * { visibility: hidden; }
-          #boleta-imprimible, #boleta-imprimible * { visibility: visible; }
-          #boleta-imprimible { position: absolute; top: 0; left: 0; width: 100%; }
-        }
-      `}</style>
-
       <Modal isOpen={!!pagoBoleta} onClose={() => setPagoBoleta(null)} title="Boleta de pago">
         {pagoBoleta && (
-          <div id="boleta-imprimible" className="space-y-4 text-sm">
+          <div className="space-y-4 text-sm">
             <div className="flex items-center justify-between">
               <p className="text-ink font-semibold">GYMTRACK 360</p>
               <p className="text-muted text-xs">N.° {pagoBoleta.id.slice(0, 8).toUpperCase()}</p>
@@ -303,7 +296,7 @@ export default function MiMembresia() {
             <div className="grid grid-cols-2 gap-4">
               <Dato2 label="Cliente" valor={perfil.data ? `${perfil.data.nombre} ${perfil.data.apellido}` : "—"} />
               <Dato2 label="Sede" valor={sedeNombre} />
-              <Dato2 label="Fecha" valor={new Date(pagoBoleta.fecha).toLocaleString("es-PE")} />
+              <Dato2 label="Fecha" valor={fechaHoraTexto(pagoBoleta.fecha)} />
               <Dato2 label="Método" valor={pagoBoleta.metodoPago} />
               <Dato2
                 label="Concepto"
@@ -316,8 +309,23 @@ export default function MiMembresia() {
             </p>
             <button
               type="button"
-              onClick={() => window.print()}
-              className="print:hidden w-full inline-flex items-center justify-center gap-2 bg-primary hover:bg-primary-dark text-white font-semibold rounded-xl min-h-[48px]"
+              onClick={() =>
+                descargarComprobante({
+                  titulo: "Boleta de pago",
+                  numero: pagoBoleta.id.slice(0, 8).toUpperCase(),
+                  monto: pagoBoleta.monto,
+                  datos: [
+                    ["Cliente", perfil.data ? `${perfil.data.nombre} ${perfil.data.apellido}` : "—"],
+                    ["Sede", sedeNombre],
+                    ["Fecha", fechaHoraTexto(pagoBoleta.fecha)],
+                    ["Método", pagoBoleta.metodoPago],
+                    ["Concepto", lista.find((m) => m.id === pagoBoleta.membresiaId)?.planNombre ?? "Membresía"],
+                  ],
+                  nota: "Boleta simulada: no tiene validez tributaria. Solo confirma el pago dentro de GYMTRACK 360.",
+                  archivo: `boleta_${pagoBoleta.id.slice(0, 8)}`,
+                })
+              }
+              className="w-full inline-flex items-center justify-center gap-2 bg-primary hover:bg-primary-dark text-white font-semibold rounded-xl min-h-[48px]"
             >
               <Download size={16} /> Descargar boleta (PDF)
             </button>

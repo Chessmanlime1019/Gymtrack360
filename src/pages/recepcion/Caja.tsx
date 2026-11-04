@@ -1,12 +1,13 @@
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Banknote, Landmark, Printer, Smartphone, Wallet } from "lucide-react";
+import { Banknote, Download, FileText, Landmark, Smartphone, Wallet } from "lucide-react";
 
 import { useAuth } from "@/hooks/useAuth";
 import { AsyncState } from "@/components/ui/AsyncState";
 import { SelectorDia } from "@/components/ui/SelectorDia";
 import { obtenerSedesActivas } from "@/services/sedesService";
-import { hoyLima, obtenerPagosDelDia } from "@/services/recepcionService";
+import { hoyLima, obtenerPagosDelDia, type PagoDia } from "@/services/recepcionService";
+import { descargarExcel, descargarPdf, type ReporteExport } from "@/lib/exportar";
 
 const METODOS = ["Efectivo", "Yape", "Plin", "Transferencia"] as const;
 const ICONO: Record<(typeof METODOS)[number], React.ElementType> = {
@@ -42,7 +43,6 @@ export default function Caja() {
   const sedes = useQuery({
     queryKey: ["sedes-activas"],
     queryFn: obtenerSedesActivas,
-    enabled: esSuperAdmin,
   });
 
   const pagos = useQuery({
@@ -65,9 +65,28 @@ export default function Caja() {
     return { total, porMetodo, efectivo, digital: total - efectivo };
   }, [datos]);
 
-  const sedeNombre = esSuperAdmin
-    ? (sedes.data?.find((s) => s.id === sedeSel)?.nombre ?? "")
-    : "Tu sede";
+  const sedeNombre = sedes.data?.find((s) => s.id === sedeId)?.nombre ?? "";
+
+  function reporteCaja(): ReporteExport<PagoDia> {
+    const porMetodo = resumen.porMetodo
+      .filter((m) => m.cantidad > 0)
+      .map((m) => `${m.metodo} ${soles(m.monto)}`)
+      .join(" · ");
+    return {
+      titulo: "Cierre de caja",
+      subtitulo: `${sedeNombre} · ${fechaLarga}${porMetodo ? ` · ${porMetodo}` : ""}`,
+      archivo: `cierre_caja_${fecha}`,
+      columnas: [
+        { titulo: "Hora", valor: (p) => hora(p.fecha), ancho: 0.7 },
+        { titulo: "Cliente", valor: (p) => p.clienteNombre, ancho: 2.6 },
+        { titulo: "Plan", valor: (p) => p.planNombre ?? "Pago", ancho: 1.6 },
+        { titulo: "Método", valor: (p) => p.metodo, ancho: 1.1 },
+        { titulo: "Monto", valor: (p) => p.monto, tipo: "moneda", total: true, ancho: 1 },
+      ],
+      filas: datos,
+    };
+  }
+
   const fechaLarga = new Date(`${fecha}T12:00:00`).toLocaleDateString("es-PE", {
     weekday: "long",
     day: "2-digit",
@@ -77,16 +96,6 @@ export default function Caja() {
 
   return (
     <div className="space-y-5">
-      <style>{`
-        @media print {
-          body * { visibility: hidden !important; }
-          #cierre-caja, #cierre-caja * { visibility: visible !important; }
-          #cierre-caja { position: absolute; left: 0; top: 0; width: 100%; background: #fff !important; color: #000 !important; padding: 24px; }
-          #cierre-caja .gt-kpi, #cierre-caja [class*="bg-"] { background: #fff !important; border-color: #ccc !important; }
-          #cierre-caja * { color: #000 !important; }
-        }
-      `}</style>
-
       <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl text-ink">Caja del día</h1>
@@ -97,12 +106,18 @@ export default function Caja() {
         <div className="flex items-center gap-2">
           <SelectorDia value={fecha} onChange={setFecha} />
           <button
-            onClick={() => window.print()}
+            onClick={() => descargarPdf(reporteCaja())}
             disabled={datos.length === 0}
             className="h-11 px-4 rounded-xl border border-line text-ink text-sm font-medium hover:border-line-strong inline-flex items-center gap-2 disabled:opacity-40"
           >
-            <Printer className="w-4 h-4" />
-            <span className="hidden sm:inline">Imprimir cierre</span>
+            <FileText className="w-4 h-4" /> PDF
+          </button>
+          <button
+            onClick={() => descargarExcel(reporteCaja())}
+            disabled={datos.length === 0}
+            className="h-11 px-4 rounded-xl bg-primary text-white text-sm font-semibold hover:bg-primary-dark inline-flex items-center gap-2 disabled:opacity-40"
+          >
+            <Download className="w-4 h-4" /> Excel
           </button>
         </div>
       </div>
@@ -136,13 +151,7 @@ export default function Caja() {
         </div>
       ) : (
         <AsyncState isLoading={pagos.isLoading} isError={pagos.isError}>
-          <div id="cierre-caja" className="space-y-5">
-            <div className="hidden print:block">
-              <p className="text-lg font-bold">GYMTRACK 360 · Cierre de caja</p>
-              <p className="text-sm capitalize">
-                {sedeNombre} · {fechaLarga}
-              </p>
-            </div>
+          <div className="space-y-5">
 
             {/* Totales */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">

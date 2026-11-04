@@ -1,10 +1,11 @@
 
 import { useState, useMemo } from "react";
-import { useQuery } from "@tanstack/react-query";
-import * as XLSX from "xlsx";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import { AsyncState } from "@/components/ui/AsyncState";
 import { diaLima, finDiaLima, hoyLima, inicioDiaLima, primerDiaMesLima } from "@/lib/fechas";
+import { descargarExcel, descargarPdf, fechaHoraTexto, type ColumnaExport, type ReporteExport } from "@/lib/exportar";
+import { estadoEfectivo } from "@/lib/paginar";
 import { BadgeEstadoMembresia } from "@/components/ui/BadgeEstadoMembresia";
 import { obtenerSedesActivas, obtenerTodasLasSedes } from "@/services/sedesService";
 import { obtenerClientes, obtenerClientesSimple } from "@/services/clientesService";
@@ -21,6 +22,7 @@ import {
   ScanLine,
   Wallet,
   History,
+  Loader2,
 } from "lucide-react";
 
 type ReporteTipo = "clientes" | "membresias" | "asistencias" | "pagos" | "historial";
@@ -30,22 +32,12 @@ function formatMoney(n: number): string {
   return `S/ ${n.toLocaleString("es-PE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
-// Excel de verdad (.xlsx), no un CSV disfrazado: usa SheetJS.
-// Instalar una vez: npm i xlsx
-function exportarExcel(encabezados: string[], filas: (string | number)[][], nombreArchivo: string) {
-  const hoja = XLSX.utils.aoa_to_sheet([encabezados, ...filas]);
-  hoja["!cols"] = encabezados.map(() => ({ wch: 20 }));
-  const libro = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(libro, hoja, "Reporte");
-  XLSX.writeFile(libro, `${nombreArchivo}.xlsx`);
-}
+const ETIQUETA_ESTADO: Record<string, string> = { activa: "Activa", vencida: "Vencida", cancelada: "Cancelada" };
 
-// Exportar a PDF sin instalar nada: se usa el "Guardar como PDF" que trae
-// el propio navegador, pero disparado por el botón y limitado a la tabla
-// del reporte (ver el bloque <style> y el id="reporte-imprimible" abajo).
-function exportarPDF() {
-  window.print();
-}
+const minutosEntre = (a: string, b: string) => Math.round((new Date(b).getTime() - new Date(a).getTime()) / 60_000);
+
+// Fecha sin hora (YYYY-MM-DD) tal cual, sin pasar por la zona horaria del equipo.
+const fechaCorta = (f: string) => f.slice(0, 10).split("-").reverse().join("/");
 
 const TABS: { key: ReporteTipo; label: string; icon: React.ElementType }[] = [
   { key: "clientes", label: "Clientes", icon: Users },
@@ -54,6 +46,14 @@ const TABS: { key: ReporteTipo; label: string; icon: React.ElementType }[] = [
   { key: "pagos", label: "Pagos", icon: Wallet },
   { key: "historial", label: "Historial", icon: History },
 ];
+
+const ARCHIVOS: Record<ReporteTipo, string> = {
+  clientes: "reporte_clientes",
+  membresias: "reporte_membresias",
+  asistencias: "reporte_asistencias",
+  pagos: "reporte_pagos",
+  historial: "historial_operaciones",
+};
 
 const TITULOS: Record<ReporteTipo, string> = {
   clientes: "Reporte de clientes",
@@ -101,31 +101,31 @@ export default function AdminReportes() {
     enabled: tab === "membresias",
   });
 
-  const { data: clientes, isLoading: loadingClientes } = useQuery({
+  const { data: clientes, isLoading: loadingClientes, isError: errorClientes } = useQuery({
     queryKey: ["reporte-clientes", sedeActivaId],
     queryFn: () => obtenerClientes(sedeActivaId),
     enabled: tab === "clientes",
   });
 
-  const { data: membresias, isLoading: loadingMembresias } = useQuery({
+  const { data: membresias, isLoading: loadingMembresias, isError: errorMembresias } = useQuery({
     queryKey: ["reporte-membresias", sedeActivaId],
     queryFn: () => obtenerMembresias(sedeActivaId),
     enabled: tab === "membresias",
   });
 
-  const { data: asistencias, isLoading: loadingAsistencias } = useQuery({
+  const { data: asistencias, isLoading: loadingAsistencias, isError: errorAsistencias } = useQuery({
     queryKey: ["reporte-asistencias", sedeActivaId, desde, hasta],
     queryFn: () => obtenerAsistencias(sedeActivaId, desde, hasta),
     enabled: tab === "asistencias",
   });
 
-  const { data: pagos, isLoading: loadingPagos } = useQuery({
-    queryKey: ["reporte-pagos", sedeActivaId],
-    queryFn: () => obtenerPagos(sedeActivaId),
+  const { data: pagos, isLoading: loadingPagos, isError: errorPagos } = useQuery({
+    queryKey: ["reporte-pagos", sedeActivaId, desde, hasta],
+    queryFn: () => obtenerPagos(sedeActivaId, desde, hasta),
     enabled: tab === "pagos",
   });
 
-  const { data: historial, isLoading: loadingHistorial } = useQuery({
+  const { data: historial, isLoading: loadingHistorial, isError: errorHistorial } = useQuery({
     queryKey: ["reporte-historial", sedeActivaId, desde, hasta],
     queryFn: () => obtenerHistorial(sedeActivaId, inicioDiaLima(desde), finDiaLima(hasta)),
     enabled: tab === "historial",
@@ -133,91 +133,111 @@ export default function AdminReportes() {
 
   const clientesFiltrados = useMemo(() => {
     if (!clientes) return [];
-    return clientes.filter((c) => {
-      const fechaCreado = diaLima(c.created_at);
-      return fechaCreado >= desde && fechaCreado <= hasta;
-    });
+    const hoy = hoyLima();
+    return clientes
+      .filter((c) => {
+        const fechaCreado = diaLima(c.created_at);
+        return fechaCreado >= desde && fechaCreado <= hasta;
+      })
+      .map((c) => ({
+        ...c,
+        membresiaEstado:
+          c.membresiaEstado && c.membresiaFechaFin ? estadoEfectivo(c.membresiaEstado, c.membresiaFechaFin, hoy) : c.membresiaEstado,
+      }));
   }, [clientes, desde, hasta]);
 
   const membresiasFiltradas = useMemo(() => {
     if (!membresias) return [];
-    return membresias.filter((m) => {
-      const enRango = m.fecha_inicio >= desde && m.fecha_inicio <= hasta;
-      const coincideCliente = !clienteFiltro || m.cliente_id === clienteFiltro;
-      return enRango && coincideCliente;
-    });
+    const hoy = hoyLima();
+    return membresias
+      .filter((m) => {
+        const enRango = m.fecha_inicio >= desde && m.fecha_inicio <= hasta;
+        const coincideCliente = !clienteFiltro || m.cliente_id === clienteFiltro;
+        return enRango && coincideCliente;
+      })
+      .map((m) => ({ ...m, estado: estadoEfectivo(m.estado, m.fecha_fin, hoy) }));
   }, [membresias, desde, hasta, clienteFiltro]);
 
-  const pagosFiltrados = useMemo(() => {
-    if (!pagos) return [];
-    return pagos.filter((p) => {
-      const fechaPago = diaLima(p.fecha);
-      return fechaPago >= desde && fechaPago <= hasta;
-    });
-  }, [pagos, desde, hasta]);
+  const pagosFiltrados = pagos ?? [];
 
-  function exportar() {
+  const nombreSede = (id: string | null | undefined) => (id ? (mapaSedes.get(id) ?? "") : "");
+
+  // Cada reporte se define una sola vez: de aquí salen el PDF y el Excel.
+  function armarReporte(): ReporteExport<any> {
+    const base = {
+      titulo: TITULOS[tab],
+      subtitulo: `${esSuperAdmin ? nombreSedeActiva : nombreSede(sesion?.sedeId)} · ${fechaCorta(desde)} al ${fechaCorta(hasta)}`,
+      archivo: `${ARCHIVOS[tab]}_${desde}_${hasta}`,
+    };
+    const como = <T,>(columnas: ColumnaExport<T>[], filas: T[]): ReporteExport<any> => ({ ...base, columnas, filas });
+
     if (tab === "clientes") {
-      exportarExcel(
-        ["Nombre", "Apellido", "Sede", "Membresía", "Vence", "Registrado"],
-        clientesFiltrados.map((c) => [
-          c.nombre,
-          c.apellido,
-          mapaSedes.get(c.sede_id ?? "") ?? c.sede_id ?? "",
-          c.membresiaEstado ?? "Sin membresía",
-          c.membresiaFechaFin ?? "",
-          new Date(c.created_at).toLocaleDateString("es-PE"),
-        ]),
-        `reporte_clientes_${desde}_${hasta}`
-      );
-    } else if (tab === "membresias") {
-      exportarExcel(
-        ["Cliente", "Plan", "Estado", "Inicio", "Vence", "Sede"],
-        membresiasFiltradas.map((m) => [
-          m.clienteNombre,
-          m.planNombre,
-          m.estado,
-          m.fecha_inicio,
-          m.fecha_fin,
-          mapaSedes.get(m.sede_origen_id) ?? m.sede_origen_id,
-        ]),
-        `reporte_membresias_${desde}_${hasta}`
-      );
-    } else if (tab === "asistencias") {
-      exportarExcel(
-        ["Cliente", "Sede", "Fecha/Hora"],
-        (asistencias ?? []).map((a) => [
-          a.clienteNombre,
-          mapaSedes.get(a.sede_id) ?? a.sede_id,
-          new Date(a.fecha_hora).toLocaleString("es-PE"),
-        ]),
-        `reporte_asistencias_${desde}_${hasta}`
-      );
-    } else if (tab === "pagos") {
-      exportarExcel(
-        ["Cliente", "Monto", "Método", "Fecha", "Sede"],
-        pagosFiltrados.map((p) => [
-          p.clienteNombre,
-          p.monto,
-          p.metodo_pago,
-          new Date(p.fecha).toLocaleString("es-PE"),
-          mapaSedes.get(p.sede_id) ?? p.sede_id,
-        ]),
-        `reporte_pagos_${desde}_${hasta}`
-      );
-    } else if (tab === "historial") {
-      exportarExcel(
-        ["Fecha", "Quién", "Acción", "Sede"],
-        (historial ?? []).map((h) => [
-          new Date(h.created_at).toLocaleString("es-PE"),
-          h.actorNombre ?? "Sistema",
-          h.descripcion,
-          h.sedeNombre ?? "—",
-        ]),
-        `historial_operaciones_${desde}_${hasta}`
+      return como<(typeof clientesFiltrados)[number]>(
+        [
+          { titulo: "Nombre", valor: (c) => c.nombre, ancho: 2 },
+          { titulo: "Apellido", valor: (c) => c.apellido, ancho: 2 },
+          { titulo: "Sede", valor: (c) => nombreSede(c.sede_id), ancho: 2.4 },
+          { titulo: "Membresía", valor: (c) => (c.membresiaEstado ? ETIQUETA_ESTADO[c.membresiaEstado] : "Sin membresía"), ancho: 1.4 },
+          { titulo: "Vence", valor: (c) => c.membresiaFechaFin, tipo: "fecha", ancho: 1.1 },
+          { titulo: "Registrado", valor: (c) => diaLima(c.created_at), tipo: "fecha", ancho: 1.1 },
+        ],
+        clientesFiltrados
       );
     }
+    if (tab === "membresias") {
+      return como<(typeof membresiasFiltradas)[number]>(
+        [
+          { titulo: "Cliente", valor: (m) => m.clienteNombre, ancho: 2.6 },
+          { titulo: "Plan", valor: (m) => m.planNombre, ancho: 1.6 },
+          { titulo: "Estado", valor: (m) => ETIQUETA_ESTADO[m.estado] ?? m.estado, ancho: 1 },
+          { titulo: "Inicio", valor: (m) => m.fecha_inicio, tipo: "fecha", ancho: 1 },
+          { titulo: "Vence", valor: (m) => m.fecha_fin, tipo: "fecha", ancho: 1 },
+          { titulo: "Sede", valor: (m) => nombreSede(m.sede_origen_id), ancho: 2.2 },
+        ],
+        membresiasFiltradas
+      );
+    }
+    if (tab === "asistencias") {
+      return como<NonNullable<typeof asistencias>[number]>(
+        [
+          { titulo: "Cliente", valor: (a) => a.clienteNombre, ancho: 2.6 },
+          { titulo: "Sede", valor: (a) => nombreSede(a.sede_id), ancho: 2.2 },
+          { titulo: "Entrada", valor: (a) => a.fecha_hora, tipo: "fechaHora", ancho: 1.4 },
+          { titulo: "Salida", valor: (a) => a.salida_at, tipo: "fechaHora", ancho: 1.4 },
+          { titulo: "Minutos", valor: (a) => (a.salida_at ? minutosEntre(a.fecha_hora, a.salida_at) : null), tipo: "entero", ancho: 0.7 },
+        ],
+        asistencias ?? []
+      );
+    }
+    if (tab === "pagos") {
+      return como<(typeof pagosFiltrados)[number]>(
+        [
+          { titulo: "Fecha", valor: (p) => p.fecha, tipo: "fechaHora", ancho: 1.4 },
+          { titulo: "Cliente", valor: (p) => p.clienteNombre, ancho: 2.6 },
+          { titulo: "Sede", valor: (p) => nombreSede(p.sede_id), ancho: 2.2 },
+          { titulo: "Método", valor: (p) => p.metodo_pago, ancho: 1.1 },
+          { titulo: "Monto", valor: (p) => p.monto, tipo: "moneda", total: true, ancho: 1.1 },
+        ],
+        pagosFiltrados
+      );
+    }
+    return como<NonNullable<typeof historial>[number]>(
+      [
+        { titulo: "Fecha", valor: (h) => h.created_at, tipo: "fechaHora", ancho: 1.3 },
+        { titulo: "Quién", valor: (h) => h.actorNombre ?? "Sistema", ancho: 1.7 },
+        { titulo: "Acción", valor: (h) => h.descripcion, ancho: 4 },
+        { titulo: "Sede", valor: (h) => h.sedeNombre, ancho: 1.7 },
+      ],
+      historial ?? []
+    );
   }
+
+  const exportar = useMutation({
+    mutationFn: async (formato: "pdf" | "excel") => {
+      const reporte = armarReporte();
+      await (formato === "pdf" ? descargarPdf(reporte) : descargarExcel(reporte));
+    },
+  });
 
   const isLoading =
     (tab === "clientes" && loadingClientes) ||
@@ -225,6 +245,13 @@ export default function AdminReportes() {
     (tab === "asistencias" && loadingAsistencias) ||
     (tab === "pagos" && loadingPagos) ||
     (tab === "historial" && loadingHistorial);
+
+  const hayError =
+    (tab === "clientes" && errorClientes) ||
+    (tab === "membresias" && errorMembresias) ||
+    (tab === "asistencias" && errorAsistencias) ||
+    (tab === "pagos" && errorPagos) ||
+    (tab === "historial" && errorHistorial);
 
   const datos =
     tab === "clientes"
@@ -239,23 +266,6 @@ export default function AdminReportes() {
 
   return (
     <div className="space-y-6">
-      {/* Estilos solo para cuando se imprime / exporta a PDF: se oculta
-          todo menos el bloque #reporte-imprimible, incluyendo sidebar
-          y barra superior del layout general. */}
-      <style>{`
-        @media print {
-          body * { visibility: hidden; }
-          #reporte-imprimible, #reporte-imprimible * { visibility: visible; }
-          #reporte-imprimible {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-          }
-          #reporte-encabezado-impreso { display: block !important; }
-        }
-      `}</style>
-
       {/* CABECERA */}
       <div className="flex items-start justify-between gap-4">
         <div>
@@ -266,25 +276,31 @@ export default function AdminReportes() {
         </div>
         <div className="flex items-center gap-2 shrink-0">
           <button
-            onClick={exportarPDF}
-            disabled={!datos || datos.length === 0}
-            className="bg-surface border border-line text-ink font-semibold rounded-lg px-3 py-2 text-sm inline-flex items-center gap-1.5 hover:bg-ink/5 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            onClick={() => exportar.mutate("pdf")}
+            disabled={!datos || datos.length === 0 || exportar.isPending}
+            className="bg-surface border border-line text-ink font-semibold rounded-xl h-11 px-4 text-sm inline-flex items-center gap-2 hover:bg-ink/5 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
           >
-            <FileText className="w-4 h-4" />
-            <span className="hidden sm:inline">Exportar PDF</span>
+            {exportar.isPending && exportar.variables === "pdf" ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileText className="w-4 h-4" />}
+            PDF
           </button>
           <button
-            onClick={exportar}
-            disabled={!datos || datos.length === 0}
-            className="bg-primary text-white font-semibold rounded-lg px-3 py-2 text-sm inline-flex items-center gap-1.5 hover:bg-primary-dark transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            onClick={() => exportar.mutate("excel")}
+            disabled={!datos || datos.length === 0 || exportar.isPending}
+            className="bg-primary text-white font-semibold rounded-xl h-11 px-4 text-sm inline-flex items-center gap-2 hover:bg-primary-dark transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
           >
-            <Download className="w-4 h-4" />
-            <span className="hidden sm:inline">Exportar Excel</span>
+            {exportar.isPending && exportar.variables === "excel" ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+            Excel
           </button>
         </div>
       </div>
 
-      {/* FILTROS (no se imprimen) */}
+      {exportar.isError && (
+        <div className="rounded-xl border border-danger/30 bg-danger/10 text-danger text-sm px-4 py-3">
+          No se pudo generar el archivo. Intenta de nuevo.
+        </div>
+      )}
+
+      {/* FILTROS */}
       <div className="flex flex-col sm:flex-row gap-3">
         {esSuperAdmin && (
           <select
@@ -334,7 +350,7 @@ export default function AdminReportes() {
         </div>
       </div>
 
-      {/* TABS (no se imprimen) */}
+      {/* TABS */}
       <div className="flex gap-1 bg-surface rounded-lg p-1 border border-line overflow-x-auto">
         {TABS.map((t) => (
           <button
@@ -350,18 +366,12 @@ export default function AdminReportes() {
         ))}
       </div>
 
-      {/* CONTENIDO -- esto es lo único que sale en el PDF */}
-      <div id="reporte-imprimible">
-        <div id="reporte-encabezado-impreso" className="hidden mb-4">
-          <p className="text-lg font-bold text-ink">{TITULOS[tab]}</p>
-          <p className="text-sm text-muted">
-            {nombreSedeActiva} · {desde} a {hasta}
-          </p>
-        </div>
-
+      {/* CONTENIDO */}
+      <div>
         <AsyncState
           isLoading={isLoading}
-          isError={false}
+          isError={!!hayError}
+          errorMessage="No se pudo cargar el reporte."
           isEmpty={!datos || datos.length === 0}
           emptyMessage={`No hay ${tab === "historial" ? "operaciones" : tab} para mostrar en el periodo seleccionado.`}
         >
@@ -391,7 +401,8 @@ export default function AdminReportes() {
                     <>
                       <th className="text-left px-5 py-4 font-semibold">Cliente</th>
                       <th className="text-left px-5 py-4 font-semibold">Sede</th>
-                      <th className="text-left px-5 py-4 font-semibold">Fecha/Hora</th>
+                      <th className="text-left px-5 py-4 font-semibold">Entrada</th>
+                      <th className="text-left px-5 py-4 font-semibold">Salida</th>
                     </>
                   )}
                   {tab === "pagos" && (
@@ -425,11 +436,11 @@ export default function AdminReportes() {
                       </td>
                       <td className="px-5 py-4 text-muted text-xs">
                         {c.membresiaFechaFin
-                          ? new Date(c.membresiaFechaFin).toLocaleDateString("es-PE")
+                          ? fechaCorta(c.membresiaFechaFin)
                           : "—"}
                       </td>
                       <td className="px-5 py-4 text-muted text-xs">
-                        {new Date(c.created_at).toLocaleDateString("es-PE")}
+                        {fechaCorta(diaLima(c.created_at))}
                       </td>
                     </tr>
                   ))}
@@ -442,8 +453,8 @@ export default function AdminReportes() {
                       <td className="px-5 py-4">
                         <BadgeEstadoMembresia estado={m.estado} />
                       </td>
-                      <td className="px-5 py-4 text-muted text-xs">{m.fecha_inicio}</td>
-                      <td className="px-5 py-4 text-muted text-xs">{m.fecha_fin}</td>
+                      <td className="px-5 py-4 text-muted text-xs">{fechaCorta(m.fecha_inicio)}</td>
+                      <td className="px-5 py-4 text-muted text-xs">{fechaCorta(m.fecha_fin)}</td>
                     </tr>
                   ))}
 
@@ -455,7 +466,10 @@ export default function AdminReportes() {
                         {mapaSedes.get(a.sede_id) ?? a.sede_id}
                       </td>
                       <td className="px-5 py-4 text-muted text-xs">
-                        {new Date(a.fecha_hora).toLocaleString("es-PE")}
+                        {fechaHoraTexto(a.fecha_hora)}
+                      </td>
+                      <td className="px-5 py-4 text-muted text-xs">
+                        {a.salida_at ? fechaHoraTexto(a.salida_at) : "—"}
                       </td>
                     </tr>
                   ))}
@@ -472,7 +486,7 @@ export default function AdminReportes() {
                       </td>
                       <td className="px-5 py-4 text-ink-2">{p.metodo_pago}</td>
                       <td className="px-5 py-4 text-muted text-xs">
-                        {new Date(p.fecha).toLocaleString("es-PE")}
+                        {fechaHoraTexto(p.fecha)}
                       </td>
                     </tr>
                   ))}
@@ -481,7 +495,7 @@ export default function AdminReportes() {
                   (historial ?? []).map((h) => (
                     <tr key={h.id} className="border-t border-line hover:bg-ink/[0.03] transition-colors">
                       <td className="px-5 py-4 text-muted text-xs whitespace-nowrap">
-                        {new Date(h.created_at).toLocaleString("es-PE")}
+                        {fechaHoraTexto(h.created_at)}
                       </td>
                       <td className="px-5 py-4 text-ink-2">{h.actorNombre}</td>
                       <td className="px-5 py-4 text-ink">{h.descripcion}</td>
@@ -493,7 +507,7 @@ export default function AdminReportes() {
           </div>
 
           {/* CARDS MÓVIL */}
-          <div className="md:hidden space-y-3 print:hidden">
+          <div className="md:hidden space-y-3">
             {tab === "clientes" &&
               clientesFiltrados.map((c) => (
                 <div key={c.id} className="bg-surface rounded-xl p-4 border border-line space-y-3">
@@ -504,9 +518,9 @@ export default function AdminReportes() {
                     <BadgeEstadoMembresia estado={c.membresiaEstado} />
                   </div>
                   <div className="flex items-center justify-between text-xs pt-3 border-t border-line text-muted">
-                    <span>Registrado {new Date(c.created_at).toLocaleDateString("es-PE")}</span>
+                    <span>Registrado {fechaCorta(diaLima(c.created_at))}</span>
                     {c.membresiaFechaFin && (
-                      <span>Vence {new Date(c.membresiaFechaFin).toLocaleDateString("es-PE")}</span>
+                      <span>Vence {fechaCorta(c.membresiaFechaFin)}</span>
                     )}
                   </div>
                 </div>
@@ -523,8 +537,8 @@ export default function AdminReportes() {
                     <BadgeEstadoMembresia estado={m.estado} />
                   </div>
                   <div className="flex items-center justify-between text-xs pt-3 border-t border-line text-muted">
-                    <span>{m.fecha_inicio}</span>
-                    <span>{m.fecha_fin}</span>
+                    <span>{fechaCorta(m.fecha_inicio)}</span>
+                    <span>{fechaCorta(m.fecha_fin)}</span>
                   </div>
                 </div>
               ))}
@@ -534,7 +548,7 @@ export default function AdminReportes() {
                 <div key={a.id} className="bg-surface rounded-xl p-4 border border-line">
                   <p className="font-medium text-sm text-ink">{a.clienteNombre}</p>
                   <p className="text-muted text-xs mt-1">
-                    {new Date(a.fecha_hora).toLocaleString("es-PE")}
+                    {fechaHoraTexto(a.fecha_hora)}
                   </p>
                 </div>
               ))}
@@ -548,7 +562,7 @@ export default function AdminReportes() {
                   </div>
                   <div className="flex items-center justify-between text-xs text-muted">
                     <span>{p.metodo_pago}</span>
-                    <span>{new Date(p.fecha).toLocaleString("es-PE")}</span>
+                    <span>{fechaHoraTexto(p.fecha)}</span>
                   </div>
                   <p className="text-muted text-xs">{mapaSedes.get(p.sede_id) ?? p.sede_id}</p>
                 </div>
@@ -560,7 +574,7 @@ export default function AdminReportes() {
                   <p className="text-sm text-ink">{h.descripcion}</p>
                   <div className="flex items-center justify-between text-xs text-muted">
                     <span>{h.actorNombre}</span>
-                    <span>{new Date(h.created_at).toLocaleString("es-PE")}</span>
+                    <span>{fechaHoraTexto(h.created_at)}</span>
                   </div>
                   {h.sedeNombre && <p className="text-muted text-xs">{h.sedeNombre}</p>}
                 </div>

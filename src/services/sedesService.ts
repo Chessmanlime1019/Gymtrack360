@@ -21,13 +21,14 @@ export interface SedeCompleta {
   nombre: string;
   direccion: string | null;
   activa: boolean;
+  aforo_maximo: number | null;
   created_at: string;
 }
 
 export async function obtenerTodasLasSedes(): Promise<SedeCompleta[]> {
   const { data, error } = await supabase
     .from("sedes")
-    .select("id, nombre, direccion, activa, created_at")
+    .select("id, nombre, direccion, activa, aforo_maximo, created_at")
     .order("nombre")
     .returns<SedeCompleta[]>();
 
@@ -35,10 +36,11 @@ export async function obtenerTodasLasSedes(): Promise<SedeCompleta[]> {
   return data;
 }
 
-export async function crearSede(params: { nombre: string; direccion: string }) {
+export async function crearSede(params: { nombre: string; direccion: string; aforo_maximo: number | null }) {
   const { error } = await (supabase.from("sedes") as any).insert({
     nombre: params.nombre,
     direccion: params.direccion,
+    aforo_maximo: params.aforo_maximo,
     activa: true,
   });
   if (error) throw error;
@@ -46,7 +48,7 @@ export async function crearSede(params: { nombre: string; direccion: string }) {
 
 export async function actualizarSede(
   id: string,
-  cambios: { nombre: string; direccion: string }
+  cambios: { nombre: string; direccion: string; aforo_maximo: number | null }
 ) {
   const { error } = await (supabase.from("sedes") as any)
     .update(cambios)

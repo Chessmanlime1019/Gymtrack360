@@ -14,6 +14,7 @@ import {
 import { obtenerRutinas } from "@/services/rutinasService";
 import { subirAvatar } from "@/services/avatarService";
 import { EncabezadoTablero } from "@/components/ui/Tablero";
+import { AforoCliente } from "@/components/aforo/Aforo";
 import {
   obtenerMiPerfil,
   obtenerMiSede,
@@ -269,6 +270,8 @@ export default function MiPerfil() {
                 <QrCode className="w-5 h-5" />
                 Mostrar mi QR para entrar
               </Link>
+
+              {perfil?.sede_id && <AforoCliente sedeId={perfil.sede_id} />}
 
               {/* ---------- Mi rutina ---------- */}
               <Link

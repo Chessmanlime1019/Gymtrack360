@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import { useTema } from "@/context/TemaContext";
 import { AsyncState } from "@/components/ui/AsyncState";
+import { AforoSedes, PanelAforo } from "@/components/aforo/Aforo";
 import { EncabezadoTablero, EstadoMembresias, KpiCard, Panel, SinDatos } from "@/components/ui/Tablero";
 import { hoyLima, primerDiaMesLima } from "@/lib/fechas";
 import { obtenerSedesActivas } from "@/services/sedesService";
@@ -258,6 +259,8 @@ export default function AdminDashboard() {
           </div>
         )}
       </AsyncState>
+
+      {vistaGlobal ? <AforoSedes /> : sedeActivaId && <PanelAforo sedeId={sedeActivaId} />}
 
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
         <Panel titulo="Ingresos" subtitulo={`${soles(totalIngresos)} cobrados en el periodo`} accion={{ texto: "Ver reportes", to: "/admin/reportes" }}>

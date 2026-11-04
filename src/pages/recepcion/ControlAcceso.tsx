@@ -1,11 +1,12 @@
 import { useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { CheckCircle2, XCircle, ScanLine, PauseCircle } from "lucide-react";
+import { CheckCircle2, LogOut, XCircle, ScanLine, PauseCircle, TriangleAlert } from "lucide-react";
 import { supabase } from "@/lib/supabaseClient";
 import { useAuth } from "@/hooks/useAuth";
 import { useRealtimeAsistencias } from "@/hooks/useRealtimeAsistencias";
 import { QrScanner } from "@/components/qr/QrScanner";
 import { AsyncState } from "@/components/ui/AsyncState";
+import { AforoCompacto } from "@/components/aforo/Aforo";
 import type { ValidacionAcceso } from "@/types";
 
 async function obtenerSedesActivas() {
@@ -19,6 +20,9 @@ async function obtenerSedesActivas() {
   if (error) throw error;
   return data;
 }
+
+const horaLima = (iso: string) =>
+  new Date(iso).toLocaleTimeString("es-PE", { hour: "2-digit", minute: "2-digit", timeZone: "America/Lima" });
 
 async function validarAcceso(params: { qrCode: string; sedeId: string }) {
   const { data, error } = await (supabase.rpc as any)("validar_acceso_qr", {
@@ -107,7 +111,7 @@ export default function ControlAcceso() {
               Control de Acceso
             </h1>
             <p className="text-muted text-sm mt-1">
-              Escanea el QR del cliente para validar su ingreso
+              El primer escaneo registra la entrada; el siguiente, la salida
             </p>
           </div>
         </div>
@@ -168,24 +172,34 @@ export default function ControlAcceso() {
         </div>
       ) : (
         <>
+          <AforoCompacto sedeId={sedeActivaId} />
+
           {/* ================= ESCÁNER / RESULTADO ================= */}
           <div className="bg-surface rounded-2xl border border-line p-4 md:p-6">
             {resultado ? (
               <div
                 className={`rounded-xl p-8 md:p-12 border text-center space-y-3 ${
-                  resultado.autorizado
-                    ? "bg-success/10 border-success/25"
-                    : "bg-danger/10 border-danger/25"
+                  !resultado.autorizado
+                    ? "bg-danger/10 border-danger/25"
+                    : resultado.tipo === "salida"
+                      ? "bg-info/10 border-info/25"
+                      : "bg-success/10 border-success/25"
                 }`}
               >
-                {resultado.autorizado ? (
+                {resultado.autorizado && resultado.tipo === "salida" ? (
+                  <LogOut className="w-16 h-16 text-info mx-auto mb-2" />
+                ) : resultado.autorizado ? (
                   <CheckCircle2 className="w-16 h-16 text-success mx-auto mb-2" />
                 ) : (
                   <XCircle className="w-16 h-16 text-danger mx-auto mb-2" />
                 )}
 
                 <p className="text-xl font-bold text-ink">
-                  {resultado.autorizado ? "Acceso autorizado" : "Acceso denegado"}
+                  {!resultado.autorizado
+                    ? "Acceso denegado"
+                    : resultado.tipo === "salida"
+                      ? "Salida registrada"
+                      : "Acceso autorizado"}
                 </p>
 
                 {resultado.cliente && (
@@ -194,6 +208,17 @@ export default function ControlAcceso() {
 
                 {resultado.plan && (
                   <p className="text-muted text-sm">Plan: {resultado.plan}</p>
+                )}
+
+                {resultado.tipo === "salida" && resultado.minutos !== undefined && (
+                  <p className="text-muted text-sm">Permaneció {resultado.minutos} min</p>
+                )}
+
+                {resultado.autorizado && resultado.tipo !== "salida" && resultado.aforo_maximo && (resultado.dentro ?? 0) >= resultado.aforo_maximo && (
+                  <p className="inline-flex items-center gap-1.5 rounded-lg bg-warning/10 border border-warning/20 px-3 py-1.5 text-warning text-xs font-semibold">
+                    <TriangleAlert className="w-3.5 h-3.5" />
+                    Aforo máximo alcanzado: {resultado.dentro} de {resultado.aforo_maximo}
+                  </p>
                 )}
 
                 {resultado.motivo && (
@@ -274,20 +299,21 @@ export default function ControlAcceso() {
           </div>
           <div>
             <h2 className="text-sm font-semibold text-ink">Últimos accesos</h2>
-            <p className="text-muted text-[11px] mt-0.5">Actividad reciente de la sede</p>
+            <p className="text-muted text-[11px] mt-0.5">Actividad reciente de la sede, en vivo</p>
           </div>
         </div>
 
         {historial.length === 0 ? (
           <div className="px-5 py-8 text-center">
-            <p className="text-muted text-xs">Aún no hay accesos registrados hoy.</p>
+            <p className="text-muted text-xs">Aún no hay accesos registrados.</p>
           </div>
         ) : (
           <table className="w-full text-sm">
             <thead className="bg-background/70 text-muted text-xs uppercase tracking-wide">
               <tr>
                 <th className="text-left px-5 py-3 font-semibold">Cliente</th>
-                <th className="text-right px-5 py-3 font-semibold">Hora</th>
+                <th className="text-right px-5 py-3 font-semibold">Entrada</th>
+                <th className="text-right px-5 py-3 font-semibold">Salida</th>
               </tr>
             </thead>
             <tbody>
@@ -309,10 +335,10 @@ export default function ControlAcceso() {
                     </div>
                   </td>
                   <td className="px-5 py-3.5 text-right text-muted text-xs">
-                    {new Date(a.fechaHora).toLocaleTimeString("es-PE", {
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })}
+                    {horaLima(a.fechaHora)}
+                  </td>
+                  <td className="px-5 py-3.5 text-right text-muted text-xs">
+                    {a.salidaAt ? horaLima(a.salidaAt) : "—"}
                   </td>
                 </tr>
               ))}

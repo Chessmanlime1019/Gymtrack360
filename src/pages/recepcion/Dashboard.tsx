@@ -4,6 +4,7 @@ import { Banknote, CreditCard, Landmark, ScanLine, Smartphone, TrendingUp, UserR
 
 import { useAuth } from "@/hooks/useAuth";
 import { AsyncState } from "@/components/ui/AsyncState";
+import { PanelAforo } from "@/components/aforo/Aforo";
 import { BotonAccion, EncabezadoTablero, EstadoMembresias, KpiCard, Panel, SinDatos } from "@/components/ui/Tablero";
 import { diaLima, hoyLima } from "@/lib/fechas";
 import { obtenerDashboardGlobal, obtenerMembresiasPorEstado } from "@/services/dashboardService";
@@ -57,8 +58,8 @@ export default function RecepcionDashboard() {
   });
 
   const { data: pagos } = useQuery({
-    queryKey: ["recepcion-dashboard-pagos", sedeId],
-    queryFn: () => obtenerPagos(sedeId),
+    queryKey: ["recepcion-dashboard-pagos", sedeId, hoy],
+    queryFn: () => obtenerPagos(sedeId, hoy, hoy),
     enabled: !!sedeId,
   });
 
@@ -134,6 +135,8 @@ export default function RecepcionDashboard() {
           />
         </div>
       </AsyncState>
+
+      <PanelAforo sedeId={sedeId} />
 
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
         <Panel

@@ -1,4 +1,6 @@
 import { supabase } from "@/lib/supabaseClient";
+import { finDiaLima, inicioDiaLima } from "@/lib/fechas";
+import { traerPorIds, traerTodas } from "@/lib/paginar";
 import type { MetodoPago } from "@/schemas/pagoSchemas";
 
 export interface PagoReciente {
@@ -82,43 +84,41 @@ export async function obtenerPagosRecientesCliente(
 // la sede ya resueltos (antes esta función no filtraba nada y devolvía
 // las filas crudas sin nombres -- lo usa tanto Reportes como el nuevo
 // historial de Registrar Pago).
-export async function obtenerPagos(sedeId: string | null): Promise<PagoConDetalle[]> {
-  let query = supabase
-    .from("pagos")
-    .select("id, cliente_id, sede_id, membresia_id, monto, metodo_pago, fecha")
-    .order("fecha", { ascending: false });
-
-  if (sedeId) {
-    query = query.eq("sede_id", sedeId);
-  }
-
-  const { data, error } = await query.returns<PagoRow[]>();
-  if (error) throw error;
-  if (!data || data.length === 0) return [];
+// "desde" y "hasta" son días YYYY-MM-DD en hora de Lima.
+export async function obtenerPagos(sedeId: string | null, desde?: string, hasta?: string): Promise<PagoConDetalle[]> {
+  const data = await traerTodas<PagoRow>(() => {
+    let query = supabase
+      .from("pagos")
+      .select("id, cliente_id, sede_id, membresia_id, monto, metodo_pago, fecha")
+      .order("fecha", { ascending: false })
+      .order("id");
+    if (sedeId) query = query.eq("sede_id", sedeId);
+    if (desde) query = query.gte("fecha", inicioDiaLima(desde));
+    if (hasta) query = query.lte("fecha", finDiaLima(hasta));
+    return query;
+  });
+  if (data.length === 0) return [];
 
   const clienteIds = [...new Set(data.map((p) => p.cliente_id))];
   const sedeIds = [...new Set(data.map((p) => p.sede_id).filter(Boolean))];
 
-  const [{ data: clientesData, error: errCli }, { data: sedesData, error: errSedes }] =
-    await Promise.all([
-      supabase
-        .from("profiles")
-        .select("id, nombre, apellido")
-        .in("id", clienteIds)
-        .returns<ClienteMiniNombre[]>(),
-      supabase.from("sedes").select("id, nombre").in("id", sedeIds).returns<SedeMini[]>(),
-    ]);
+  const [clientesData, { data: sedesData, error: errSedes }] = await Promise.all([
+    traerPorIds<ClienteMiniNombre>(clienteIds, (lote) =>
+      supabase.from("profiles").select("id, nombre, apellido").in("id", lote)
+    ),
+    supabase.from("sedes").select("id, nombre").in("id", sedeIds).returns<SedeMini[]>(),
+  ]);
 
-  if (errCli) throw errCli;
   if (errSedes) throw errSedes;
 
-  const mapaClientes = new Map((clientesData ?? []).map((c) => [c.id, c]));
+  const mapaClientes = new Map(clientesData.map((c) => [c.id, c]));
   const mapaSedes = new Map((sedesData ?? []).map((s) => [s.id, s.nombre]));
 
   return data.map((p) => {
     const cliente = mapaClientes.get(p.cliente_id);
     return {
       ...p,
+      monto: Number(p.monto),
       clienteNombre: cliente ? `${cliente.nombre} ${cliente.apellido}` : "Cliente",
       sedeNombre: mapaSedes.get(p.sede_id) ?? "Sede",
     };
