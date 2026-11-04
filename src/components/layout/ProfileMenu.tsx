@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 
-import { LogOut, Camera, Loader2 } from "lucide-react";
+import { ChevronDown, LogOut, Camera, Loader2 } from "lucide-react";
 
 import { useAuth } from "@/hooks/useAuth";
 import { useRole } from "@/hooks/useRole";
@@ -64,45 +64,40 @@ export function ProfileMenu() {
     }
   }
 
+  const nombreCompleto = `${sesion.nombre} ${sesion.apellido}`.trim() || ETIQUETA_ROL[role];
   const iniciales =
-    `${sesion.nombre[0] ?? ""}${sesion.apellido[0] ?? ""}`.toUpperCase();
+    `${sesion.nombre[0] ?? ""}${sesion.apellido[0] ?? ""}`.toUpperCase() || ETIQUETA_ROL[role][0];
 
   return (
     <div className="relative" ref={menuRef}>
 
-      {/* FOTO / PERFIL */}
+      {/* NOMBRE, ROL Y FOTO */}
       <button
         onClick={() => setAbierto((v) => !v)}
         aria-label="Perfil"
-        className="
-          w-9 h-9
-          rounded-full
-          overflow-hidden
-          border border-line-strong
-          shrink-0
-          hover:border-primary/60
-          transition-colors
-        "
+        aria-expanded={abierto}
+        className="flex items-center gap-2.5 rounded-xl p-1 sm:pl-2 sm:pr-1.5 hover:bg-ink/5 transition-colors"
       >
-        {sesion.avatarUrl ? (
-          <img
-            src={sesion.avatarUrl}
-            alt=""
-            className="w-full h-full object-cover"
-          />
-        ) : (
-          <div
-            className="
-              w-full h-full
-              bg-primary/15
-              flex items-center justify-center
-              text-primary
-              text-xs font-semibold
-            "
-          >
-            {iniciales}
-          </div>
-        )}
+        <span className="hidden sm:block text-right min-w-0 max-w-[170px]">
+          <span className="block text-[13px] font-semibold leading-tight text-ink truncate capitalize">
+            {nombreCompleto}
+          </span>
+          {nombreCompleto !== ETIQUETA_ROL[role] && (
+            <span className="block text-[11px] leading-tight text-muted mt-0.5">{ETIQUETA_ROL[role]}</span>
+          )}
+        </span>
+
+        <span className="w-9 h-9 rounded-full overflow-hidden border border-line-strong shrink-0">
+          {sesion.avatarUrl ? (
+            <img src={sesion.avatarUrl} alt="" className="w-full h-full object-cover" />
+          ) : (
+            <span className="w-full h-full bg-primary/15 flex items-center justify-center text-primary text-xs font-semibold">
+              {iniciales}
+            </span>
+          )}
+        </span>
+
+        <ChevronDown className={`hidden sm:block w-4 h-4 text-muted transition-transform ${abierto ? "rotate-180" : ""}`} />
       </button>
 
       {/* MENU */}
@@ -112,7 +107,7 @@ export function ProfileMenu() {
             absolute right-0 mt-2
             w-64
             bg-surface
-            border border-line
+            border border-line-strong
             rounded-xl
             shadow-2xl
             z-50
@@ -189,7 +184,7 @@ export function ProfileMenu() {
 
             <div className="min-w-0">
               <p className="text-ink text-sm font-medium truncate">
-                {sesion.nombre} {sesion.apellido}
+                {nombreCompleto}
               </p>
 
               <p className="text-muted text-xs">

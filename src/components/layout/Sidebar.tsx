@@ -5,6 +5,8 @@ import { useRole } from "@/hooks/useRole";
 
 import { NAV_POR_ROL, ETIQUETA_ROL } from "@/lib/navConfig";
 
+import { SedeLateral } from "./SedeActual";
+
 export function Sidebar() {
   const { sesion } = useAuth();
   const { role } = useRole();
@@ -62,7 +64,9 @@ export function Sidebar() {
           </p>
         </div>
 
-        <p className="text-muted text-xs mt-2">{ETIQUETA_ROL[role]}</p>
+        <p className="text-white text-[13px] font-extrabold tracking-wide mt-2 [font-family:'Arial_Black',var(--gt-font-body)]">
+          {ETIQUETA_ROL[role]}
+        </p>
       </div>
 
       {/* =====================================================
@@ -116,6 +120,11 @@ export function Sidebar() {
           </NavLink>
         ))}
       </nav>
+
+      {/* =====================================================
+          SEDE DEL USUARIO
+      ===================================================== */}
+      <SedeLateral />
 
       {/* =====================================================
           DECORACIÓN INFERIOR

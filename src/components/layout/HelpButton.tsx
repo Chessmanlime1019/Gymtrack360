@@ -115,7 +115,7 @@ export function HelpButton() {
         onClick={() => setAbierto((v) => !v)}
         aria-label="Ayuda"
         aria-expanded={abierto}
-        className="w-11 h-11 rounded-xl grid place-items-center text-ink-2 hover:bg-surface hover:text-ink transition-colors"
+        className="w-11 h-11 rounded-xl grid place-items-center text-ink-2 hover:bg-ink/5 hover:text-ink transition-colors"
       >
         <HelpCircle size={20} />
       </button>

@@ -1,8 +1,9 @@
-﻿import { Outlet } from "react-router-dom";
+import { Outlet } from "react-router-dom";
 
 import { Sidebar } from "./Sidebar";
 import { TopBar } from "./TopBar";
 import { BottomNav } from "./BottomNav";
+import { SedeMovil } from "./SedeActual";
 import { InstalarApp } from "@/components/pwa/InstalarApp";
 
 export function AppShell() {
@@ -12,6 +13,7 @@ export function AppShell() {
 
       <div className="flex-1 flex flex-col min-w-0 bg-background">
         <TopBar />
+        <SedeMovil />
 
         <main className="flex-1 px-4 py-6 md:px-8 md:py-8 pb-24 md:pb-8 bg-background">
           <Outlet />

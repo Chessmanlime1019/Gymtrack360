@@ -1,4 +1,4 @@
-﻿import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   AlertTriangle,
@@ -102,7 +102,7 @@ export function NotificationsMenu() {
         }}
         aria-label={noLeidas > 0 ? `Notificaciones, ${noLeidas} sin leer` : "Notificaciones"}
         aria-expanded={abierto}
-        className="relative w-11 h-11 rounded-xl grid place-items-center text-ink-2 hover:bg-surface hover:text-ink transition-colors"
+        className="relative w-11 h-11 rounded-xl grid place-items-center text-ink-2 hover:bg-ink/5 hover:text-ink transition-colors"
       >
         <Bell size={20} />
         {noLeidas > 0 && (

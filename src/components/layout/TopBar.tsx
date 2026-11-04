@@ -31,14 +31,17 @@ export function TopBar() {
     >
       <GlobalSearch />
 
-      <div className="flex items-center gap-1 sm:gap-2 ml-auto shrink-0">
+      <div className="flex items-center gap-0.5 sm:gap-1 ml-auto shrink-0">
+        <NotificationsMenu />
+
+        <HelpButton />
+
         <QuickAccessMenu />
 
         <TemaMenu />
 
-        <NotificationsMenu />
-
-        <HelpButton />
+        {/* Línea que separa las herramientas de la cuenta */}
+        <span aria-hidden className="hidden sm:block w-px h-8 bg-line-strong mx-2 lg:mx-3" />
 
         <ProfileMenu />
       </div>
